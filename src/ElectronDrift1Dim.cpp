@@ -7,9 +7,14 @@
 //============================================================================
 
 #include <iostream>
-using namespace std;
+#include "argon_cross.h"
+#include "tests.h"
 
 int main(int argn, char * argv[]) {
-	cout << "!!!Hello World!!!" << endl; // prints !!!Hello World!!!
+	std::string a;
+	test_all();
+	std::cout<<"Enter something: ";
+	std::cin>>a;
 	return 0;
 }
+

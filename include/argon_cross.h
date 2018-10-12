@@ -1,46 +1,88 @@
-#include <math>
+#ifndef ARGON_CROSS_H
+#define ARGON_CROSS_H
+
+/*	TODO: add comprehensive explanation of used data and calculations of cross sections
+ *
+ */
+
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <math.h>
+#include "global_definitions.h"
+#include "PolynomialFit.h"
+#include "LegendrePolynomials.h"
 
-class LegendrePolynom //uses recurrence relation, plus saves values for 2 maximum ls for faster evaluation of the next l (faster performance for the same x and rising l)
+class EnergyScanner
 {
 protected:
-	//these are for caching (improves speed for P(x) for the same x and rising l)
-	unsigned int l_last;
-	unsigned int l_last1;
-	long double P_last;
-	long double P_last1;
-	long double x_last;
+	unsigned int i;
+	int type_; //0 - from 5e-3 to 13 eV. other - 10.85 - 11.7 eV - near resonance
 public:
-	LegendrePolynom();
-	long double operator ()(long double x, unsigned int l);
+	EnergyScanner(int type = 0);
+	long double Next(int& err);
+	void Reset(void);
 };
 
-class LargeFactorHelper //assumed that only numbers less than N are in the input
+class ArExperimental
+{
+public:
+	std::vector<DataVector> phase_shifts_; //TODO: account for phase plus and phase minus
+	DataVector total_elastic_cross;
+	ArExperimental(void);
+	unsigned int max_L (long double k);
+	long double phase_shift (long double k, unsigned int l);
+};
+
+class ArDataTables //loads data from default files if presented. If not then values are calculated and files are created.
 {
 protected:
-    unsigned int n_max;
-    void SimplifyFactorial(void);
-	//void Factorize(void);
-	void Simplify(void);
-	std::vector<unsigned int> dividers;
-	std::vector<unsigned int> denominators;
-	std::vector<unsigned int> prime_dividers; //according to the prime_list
-	std::vector<unsigned int> prime_denominators; //according to the prime_list
-	std::vector<unsigned int> prime_list; //all prime numbers <= n_max, starting from 2
-	std::vector<unsigned int> factor_dividers;
-	std::vector<unsigned int> factor_denominators;
+	std::string total_cross_elastic_fname;
+	std::string total_cross_resonance_fname;
+	std::string back_scatter_elastic_prob_fname;
+	std::string back_scatter_resonance_prob_fname;
+	std::string TM_backward_elastic_fname;
+	std::string TM_backward_resonance_fname;
+	std::string TM_forward_elastic_fname;
+	std::string TM_forward_resonance_fname;
+	//atm backward scatter probability and TM's for resonance are taken the same as elastic values
+	DataVector total_cross_elastic_;
+	DataVector total_cross_resonance_;
+	DataVector back_scatter_elastic_prob_;
+	DataVector back_scatter_resonance_prob_;
+	DataVector TM_backward_elastic_;
+	DataVector TM_backward_resonance_;
+	DataVector TM_forward_elastic_;
+	DataVector TM_forward_resonance_;
+	void read_data (std::ifstream &inp, DataVector &data, long double y_factor = 1);
 public:
-	LargeFactorHelper(unsigned int N_max);
-	void MultiplyByFactorial(unsigned int n);
-	void DivideByFactorial(unsigned int n);
-	void MultiplyBy(unsigned int n, unsigned int power = 1);
-	void DivideBy(unsigned int n, unsigned int power = 1);
-	long double Output(void);
-	void Print(void);
-	void Clear(void);
+	ArDataTables();
+	double XS_elastic(double E);
+	double XS_resonanse(double E);
+	double P_backward_elastic(double E);
+	double P_backward_resonance(double E);
+	double TM_backward_elastic(double E);
+	double TM_backward_resonance(double E);
+	double TM_forward_elastic(double E);
+	double TM_forward_resonance(double E);
 };
 
-//E in eV, theta in radians, output is in cm-17
+extern ArExperimental ArExper;
+extern ArDataTables ArTables;
+
+void argon_phase_values(long double k, unsigned int l, long double &tan, long double &sin, long double &cos);
+//E in eV, theta in radians, output is in m
 long double argon_cross_elastic_diff (long double E, long double theta);
+long double argon_cross_elastic (long double E);
+long double argon_back_scatter_prob (long double E);
+long double argon_TM_forward (long double E);
+long double argon_TM_backward (long double E);
+
+long double argon_cross_resonance_diff (long double E, long double theta);
+long double argon_cross_resonance (long double E);
+long double argon_back_resonance_prob (long double E);
+long double argon_TM_forward_resonance (long double E);
+long double argon_TM_backward_resonance (long double E);
+
+#endif
+
