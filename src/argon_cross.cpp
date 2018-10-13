@@ -340,22 +340,54 @@ ArDataTables::ArDataTables():
 }
 
 double ArDataTables::XS_elastic(double E)
-{	return total_cross_elastic_(E, E);}
+{
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E = EN_MINIMUM;
+	return total_cross_elastic_(E, E);
+}
 
-double ArDataTables::XS_resonanse(double E)
-{	return total_cross_resonance_(E, E);}
+double ArDataTables::XS_resonance(double E)
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return total_cross_resonance_(E, E);
+}
 double ArDataTables::P_backward_elastic(double E)
-{	return back_scatter_elastic_prob_(E, E);}
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return back_scatter_elastic_prob_(E, E);
+}
 double ArDataTables::P_backward_resonance(double E)
-{	return back_scatter_resonance_prob_(E, E);}
+{	
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return back_scatter_resonance_prob_(E, E);
+}
 double ArDataTables::TM_backward_elastic(double E)
-{	return TM_backward_elastic_(E, E); }
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return TM_backward_elastic_(E, E); 
+}
 double ArDataTables::TM_backward_resonance(double E)
-{	return TM_backward_resonance_(E, E); }
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return TM_backward_resonance_(E, E);
+}
 double ArDataTables::TM_forward_elastic(double E)
-{	return TM_forward_elastic_(E, E); }
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return TM_forward_elastic_(E, E); 
+}
 double ArDataTables::TM_forward_resonance(double E)
-{	return TM_forward_resonance_(E, E); }
+{
+	if (E<EN_MINIMUM)
+		E = EN_MINIMUM;
+	return TM_forward_resonance_(E, E); 
+}
 
 //k is in atomic units
 void argon_phase_values(long double k, unsigned int l, long double &tan, long double &sin, long double &cos)
@@ -394,8 +426,8 @@ void argon_phase_values(long double k, unsigned int l, long double &tan, long do
 }
 //E in eV
 long double argon_cross_elastic_diff (long double E, long double theta) {
-	if (E<8e-3) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
-		E=8e-3;
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E= EN_MINIMUM;
 	//different formulas are used for E<1eV and E>1eV!
 	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E); //recalculation from energy to atomic units is following:
 	// k[atomic] = a_bohr * sqrt(2 * m_electron[SI] * q_electron[SI] * E[eV]) / h_bar(plank const)[SI].
@@ -426,6 +458,8 @@ long double argon_cross_elastic_diff (long double E, long double theta) {
 
 long double argon_cross_elastic (long double E)
 {
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E = EN_MINIMUM;
 	if (E <= 1) {
 		long double k = a_h_bar_2e_m_e_SIconst*sqrt(E); //recalculation from energy to atomic units is following:
 		// k[atomic] = a_bohr * sqrt(2 * m_electron[SI] * q_electron[SI] * E[eV]) / h_bar(plank const)[SI].
@@ -448,6 +482,8 @@ long double argon_cross_elastic (long double E)
 
 long double argon_back_scatter_prob (long double E)
 {
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E = EN_MINIMUM;
 	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E); //recalculation from energy to atomic units is following:
 	// k[atomic] = a_bohr * sqrt(2 * m_electron[SI] * q_electron[SI] * E[eV]) / h_bar(plank const)[SI].
 	LegendrePolynom P1, P2;
@@ -476,6 +512,8 @@ long double argon_back_scatter_prob (long double E)
 //energy loss and input are in eV
 long double argon_TM_forward (long double E)
 {
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E = EN_MINIMUM;
 	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E); //recalculation from energy to atomic units is following:
 	// k[atomic] = a_bohr * sqrt(2 * m_electron[SI] * q_electron[SI] * E[eV]) / h_bar(plank const)[SI].
 	LegendrePolynom P1, P2;
@@ -500,12 +538,12 @@ long double argon_TM_forward (long double E)
 		}
 	}
 	return W/cross;
-	long double gamma = (E + e_mass_eVconst)/e_mass_eVconst;
-	return -2*(W/cross)*E*gamma/((1+gamma)*(1+gamma));
 }
 
 long double argon_TM_backward (long double E)
 {
+	if (E<EN_MINIMUM) //to avoid troubles. See Kurokawa for the choice of value. TODO: maybe make linear increase of XS to 0
+		E = EN_MINIMUM;
 	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E); //recalculation from energy to atomic units is following:
 	// k[atomic] = a_bohr * sqrt(2 * m_electron[SI] * q_electron[SI] * E[eV]) / h_bar(plank const)[SI].
 	LegendrePolynom P1, P2;

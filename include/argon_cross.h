@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include "global_definitions.h"
 #include "PolynomialFit.h"
@@ -58,7 +59,7 @@ protected:
 public:
 	ArDataTables();
 	double XS_elastic(double E);
-	double XS_resonanse(double E);
+	double XS_resonance(double E);
 	double P_backward_elastic(double E);
 	double P_backward_resonance(double E);
 	double TM_backward_elastic(double E);

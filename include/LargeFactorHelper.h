@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <algorithm>
 #include "global_definitions.h"
 
 class LargeFactorHelper //assumed that only numbers less than N are in the input

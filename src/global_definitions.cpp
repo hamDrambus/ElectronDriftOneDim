@@ -21,3 +21,25 @@ std::string strtoken(std::string &in, std::string break_symbs)
 	}
 	return out;
 }
+
+void ensure_folder(std::string folder)
+{
+#if defined(__WIN32__)
+	if (!folder.empty()) {
+		DWORD ftyp = GetFileAttributesA(folder.c_str());
+		if (!(ftyp & FILE_ATTRIBUTE_DIRECTORY) || ftyp == INVALID_FILE_ATTRIBUTES) {
+			int code = system(("mkdir \"" + folder + "\"").c_str());
+			if (code)
+				std::cout << "mkdir error: " << GetLastError() << std::endl;
+		}
+	}
+#else
+	struct stat st;
+	stat(folder.c_str(), &st);
+	if (!S_ISDIR(st.st_mode)) {
+		int code = system(("mkdir \"" + folder + "\"").c_str());
+		if (code)
+			std::cout << "mkdir error: " << code << std::endl;
+	}
+#endif //_WIN32__
+}

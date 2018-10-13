@@ -755,10 +755,10 @@ void test_all (void)
 	std::cout<<std::endl;
 	std::cout<<std::endl;
 	std::cout<<"Testing phase shifts fit:"<<std::endl;
-	test_phase_shift_fit ();
+	test_phase_shift_fit ();*/
 	std::cout<<"==============================================="<<std::endl;
 	std::cout<<std::endl;
-	std::cout<<std::endl;*/
+	std::cout<<std::endl;
 	std::cout<<"Testing factor helping class:"<<std::endl;
 	test_factor_helper ();
 	std::cout<<"==============================================="<<std::endl;
