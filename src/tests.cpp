@@ -2,10 +2,10 @@
 
 void test_polynomial_fit (void)
 {
-	std::string fname_raw = "resources/sinx_to_x_raw.txt";
-	std::string fname_fit1 = "resources/sinx_to_x_fit1.txt";
-	std::string fname_fit2 = "resources/sinx_to_x_fit2.txt";
-	std::string fname_fit3 = "resources/sinx_to_x_fit3.txt";
+	std::string fname_raw = "tests/sinx_to_x_raw.txt";
+	std::string fname_fit1 = "tests/sinx_to_x_fit1.txt";
+	std::string fname_fit2 = "tests/sinx_to_x_fit2.txt";
+	std::string fname_fit3 = "tests/sinx_to_x_fit3.txt";
 	std::vector<double> xs, ys;
 	xs.resize(50);
 	ys.resize(50);
@@ -74,12 +74,12 @@ void test_polynomial_fit (void)
 		str<<x<<"\t"<<y<<std::endl;
 	}
 	str.close();
-	std::string name = "resources/test_fit.sc";
+	std::string name = "tests/test_fit.sc";
 	str.open(name, std::ios_base::trunc);
-	str<<"plot \"resources/sinx_to_x_raw.txt\" u 1:2 title \"raw sin(x)/x\""<<std::endl;
-	str<<"replot \"resources/sinx_to_x_fit1.txt\" u 1:2 title \"fit1\""<<std::endl;
-	str<<"replot \"resources/sinx_to_x_fit2.txt\" u 1:2 title \"fit2\""<<std::endl;
-	str<<"replot \"resources/sinx_to_x_fit3.txt\" u 1:2 title \"fit3\""<<std::endl;
+	str<<"plot \"tests/sinx_to_x_raw.txt\" u 1:2 title \"raw sin(x)/x\""<<std::endl;
+	str<<"replot \"tests/sinx_to_x_fit1.txt\" u 1:2 title \"fit1\""<<std::endl;
+	str<<"replot \"tests/sinx_to_x_fit2.txt\" u 1:2 title \"fit2\""<<std::endl;
+	str<<"replot \"tests/sinx_to_x_fit3.txt\" u 1:2 title \"fit3\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -87,9 +87,9 @@ void test_polynomial_fit (void)
 
 void test_phase_shift_fit (void)
 {
-	std::string fname_McEachran = "resources/phase_shifts_McEachran_";
-	std::string fname_MERT = "resources/phase_shifts_MERT.txt";
-	std::string fname_phase_fit = "resources/phase_shifts_fit.txt";
+	std::string fname_McEachran = "tests/phase_shifts_McEachran_";
+	std::string fname_MERT = "tests/phase_shifts_MERT.txt";
+	std::string fname_phase_fit = "tests/phase_shifts_fit.txt";
 
 	std::ofstream str;
 	for (unsigned int l=0; l<ArExper.phase_shifts_.size();++l) {
@@ -104,7 +104,7 @@ void test_phase_shift_fit (void)
 	str.open(fname_phase_fit, std::ios_base::trunc);
 	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
 	for (int i=0; i<600; ++i) {
-		double x = 0.5 + i*(12-0.5)/599;
+		double x = THRESH_E_-0.2 + i*(12-THRESH_E_+0.2)/599;
 		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
 		str<<x<<"\t";
 		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l)
@@ -116,12 +116,12 @@ void test_phase_shift_fit (void)
 	str.open(fname_MERT, std::ios_base::trunc);
 	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
 	for (int i=0; i<100; ++i) {
-		double x = 1e-2 + i*(1-1e-2)/99;
+		double x = 1e-2 + i*(THRESH_E_-1e-2)/99;
 		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
 		str<<x<<"\t";
 		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
 			long double tan, sin, cos;
-			argon_phase_values(k, l, tan, sin, cos);
+			argon_phase_values_MERT5(k, l, tan, sin, cos);
 			tan = std::atan(tan);
 			str<<tan<<"\t";
 		}
@@ -130,7 +130,7 @@ void test_phase_shift_fit (void)
 	str.close();
 
 	for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
-		std::string name = std::string("resources/test_phase_shift_fit_") + std::to_string(l) + ".sc";
+		std::string name = std::string("tests/test_phase_shift_fit_") + std::to_string(l) + ".sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"set logscale x"<<std::endl;
 		str<<"plot '"<<fname_McEachran + std::to_string(l) + ".txt" <<"' u 1:2 title 'McEachran_"<<l<<"'"<<std::endl;
@@ -488,19 +488,19 @@ void test_factor_helper (void)
 
 void test_diff_tot_cross (void)
 {
-	std::string fname_diff = "resources/diff_cross_10eV.txt";
-	std::string fname_tot = "resources/diff_cross_total.txt";
+	std::string fname_diff = "tests/diff_cross_10eV.txt";
+	std::string fname_tot = "tests/diff_cross_total.txt";
 	std::ofstream str;
 	str.open(fname_diff, std::ios_base::trunc);
 	str<<"theta[deg]\tXS[1e-20m^2]"<<std::endl;
 	for (int i=0; i<600; ++i) {
 		double th = i*(M_PI)/599;
-		str<<th*180/M_PI<<"\t"<<1e20*argon_cross_elastic_diff(10.0, th)<<std::endl;
+		str<<th*180/M_PI<<"\t"<<argon_cross_elastic_diff(10.0, th)<<std::endl;
 	}
 	str.close();
 
 	str.open(fname_tot, std::ios_base::trunc);
-	str<<"E[eV]\tXS from diff [1e-20m^2]\tXS tot [1e-20m^2]"<<std::endl;
+	str<<"E[eV]\tXS from diff [1e-20m^2]\tXS tot [1e-20m^2]\tXS tot PS"<<std::endl;
 	EnergyScanner eScan;
 	int err = 0;
 	while (true) {
@@ -510,21 +510,23 @@ void test_diff_tot_cross (void)
 		long double integral = 0;
 		for (int j=0;j<10001; ++j)
 			integral+=(M_PI/10000.0)*argon_cross_elastic_diff(E, j*M_PI/10000.0)*sin(j*M_PI/10000.0);
-		str<<E<<"\t"<<1e20*integral<<"\t"<<1e20*argon_cross_elastic(E)<<std::endl;
+		str<<E<<"\t"<<integral<<"\t"<<argon_cross_elastic(E)<<"\t"<<argon_cross_elastic_from_phases(E)<<std::endl;
 	}
 	str.close();
 
-	std::string name = "resources/test_diff_XS.sc";
+	std::string name = "tests/test_diff_XS.sc";
 	str.open(name, std::ios_base::trunc);
 	str<<"plot \""<<fname_diff<<"\" u 1:2 title \"Diff. XS\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
-	name = "resources/test_diff_XS_total.sc";
+	name = "tests/test_diff_XS_total.sc";
 	str.open(name, std::ios_base::trunc);
 	str<<"set logscale x"<<std::endl;
 	str<<"set logscale y"<<std::endl;
 	str<<"plot \""<<fname_tot<<"\" u 1:2 title \"total from diff. XS\""<<std::endl;
+	str<<"replot \"data/ArScatteringCross.dat\" u 1:2 lc rgb \"#000000\" title \"total XS experiment\""<<std::endl;
+	str<<"replot \""<<fname_tot<<"\" u 1:4 title \"total XS from phase shifts\""<<std::endl;
 	str<<"replot \""<<fname_tot<<"\" u 1:3 w lines title \"total XS\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
@@ -533,7 +535,7 @@ void test_diff_tot_cross (void)
 
 void test_backward_scatter_prob (void)
 {
-	std::string fname = "resources/backward_scattering_prob.txt";
+	std::string fname = "tests/backward_scattering_prob.txt";
 	std::ofstream str;
 	str.open(fname, std::ios_base::trunc);
 	str<<"E[eV]\tW_backward"<<std::endl;
@@ -546,10 +548,10 @@ void test_backward_scatter_prob (void)
 		str<<E<<"\t"<<argon_back_scatter_prob(E)<<std::endl;
 	}
 	str.close();
-	std::string name = "resources/test_backward_scatter.sc";
+	std::string name = "tests/test_backward_scatter.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"resources/backward_scattering_prob.txt\" u 1:2 title \"W_backward\""<<std::endl;
+	str<<"plot \"tests/backward_scattering_prob.txt\" u 1:2 title \"W_backward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -557,7 +559,7 @@ void test_backward_scatter_prob (void)
 
 void test_TM_forward (void)
 {
-	std::string fname = "resources/forward_TM.txt";
+	std::string fname = "tests/forward_TM.txt";
 	std::ofstream str;
 	str.open(fname, std::ios_base::trunc);
 	str<<"E[eV]\tTM_forward"<<std::endl;
@@ -570,10 +572,10 @@ void test_TM_forward (void)
 		str<<E<<"\t"<<argon_TM_forward(E)<<std::endl;
 	}
 	str.close();
-	std::string name = "resources/test_forward_TM.sc";
+	std::string name = "tests/test_forward_TM.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"resources/forward_TM.txt\" u 1:2 title \"TM_forward\""<<std::endl;
+	str<<"plot \"tests/forward_TM.txt\" u 1:2 title \"TM_forward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -581,7 +583,7 @@ void test_TM_forward (void)
 
 void test_TM_backward (void)
 {
-	std::string fname = "resources/backward_TM.txt";
+	std::string fname = "tests/backward_TM.txt";
 	std::ofstream str;
 	str.open(fname, std::ios_base::trunc);
 	str<<"E[eV]\tTM_backward"<<std::endl;
@@ -594,10 +596,10 @@ void test_TM_backward (void)
 		str<<E<<"\t"<<argon_TM_backward(E)<<std::endl;
 	}
 	str.close();
-	std::string name = "resources/test_backward_TM.sc";
+	std::string name = "tests/test_backward_TM.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"resources/backward_TM.txt\" u 1:2 title \"TM_backward\""<<std::endl;
+	str<<"plot \"tests/backward_TM.txt\" u 1:2 title \"TM_backward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -608,8 +610,8 @@ void test_data_table (void)
 	std::ofstream str;
 	EnergyScanner eScan;
 	{
-		std::string fname_XS = "resources/table_total_XS.txt";
-		std::string fname_XS1 = "resources/diff_cross_total.txt";
+		std::string fname_XS = "tests/table_total_XS.txt";
+		std::string fname_XS1 = "tests/diff_cross_total.txt";
 		str.open(fname_XS, std::ios_base::trunc);
 		str<<"E[eV]\tXS elastic total [1e-20 m^2]"<<std::endl;
 		int err = 0;
@@ -617,10 +619,10 @@ void test_data_table (void)
 			double E = 0.95*eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<1e20*ArTables.XS_elastic(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.XS_elastic(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_table_XS.sc";
+		std::string name = "tests/test_table_XS.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"set logscale x"<<std::endl;
 		str<<"plot \""<<fname_XS1<<"\" u 1:3 title \"XS from function\""<<std::endl;
@@ -631,8 +633,8 @@ void test_data_table (void)
 	}
 
 	{
-		std::string fname_back_prob = "resources/table_back_prob.txt";
-		std::string fname_back_prob1 = "resources/backward_scattering_prob.txt";
+		std::string fname_back_prob = "tests/table_back_prob.txt";
+		std::string fname_back_prob1 = "tests/backward_scattering_prob.txt";
 		str.open(fname_back_prob, std::ios_base::trunc);
 		str<<"E[eV]\tP elastic\tP resonance"<<std::endl;
 		int err = 0;
@@ -643,7 +645,7 @@ void test_data_table (void)
 			str<<E<<"\t"<<ArTables.P_backward_elastic(E)<<"\t"<<ArTables.P_backward_resonance(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_table_backward_prob.sc";
+		std::string name = "tests/test_table_backward_prob.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_back_prob1<<"\" u 1:2 title \"P from function\""<<std::endl;
 		str<<"replot \""<<fname_back_prob<<"\" u 1:2 w lines title \"P from table elastic\""<<std::endl;
@@ -654,8 +656,8 @@ void test_data_table (void)
 	}
 
 	{
-		std::string fname_TM_back = "resources/table_backward_TM.txt";
-		std::string fname_TM_back1 = "resources/backward_TM.txt";
+		std::string fname_TM_back = "tests/table_backward_TM.txt";
+		std::string fname_TM_back1 = "tests/backward_TM.txt";
 		str.open(fname_TM_back, std::ios_base::trunc);
 		str<<"E[eV]\tTM backward elastic\tTM backward resonance"<<std::endl;
 		int err = 0;
@@ -666,7 +668,7 @@ void test_data_table (void)
 			str<<E<<"\t"<<ArTables.TM_backward_elastic(E)<<"\t"<<ArTables.TM_backward_resonance(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_table_backward_TM.sc";
+		std::string name = "tests/test_table_backward_TM.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_TM_back1<<"\" u 1:2 title \"TM backward from function\""<<std::endl;
 		str<<"replot \""<<fname_TM_back<<"\" u 1:2 w lines title \"TM backward from table elastic\""<<std::endl;
@@ -677,8 +679,8 @@ void test_data_table (void)
 	}
 
 	{
-		std::string fname_TM_for = "resources/table_forward_TM.txt";
-		std::string fname_TM_for1 = "resources/forward_TM.txt";
+		std::string fname_TM_for = "tests/table_forward_TM.txt";
+		std::string fname_TM_for1 = "tests/forward_TM.txt";
 		str.open(fname_TM_for, std::ios_base::trunc);
 		str<<"E[eV]\tTM forward elastic\tTM forward resonance"<<std::endl;
 		int err = 0;
@@ -689,7 +691,7 @@ void test_data_table (void)
 			str<<E<<"\t"<<ArTables.TM_forward_elastic(E)<<"\t"<<ArTables.TM_forward_resonance(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_table_forward_TM.sc";
+		std::string name = "tests/test_table_forward_TM.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_TM_for1<<"\" u 1:2 title \"TM forward from function\""<<std::endl;
 		str<<"replot \""<<fname_TM_for<<"\" u 1:2 w lines title \"TM forward from table elastic\""<<std::endl;
@@ -700,8 +702,8 @@ void test_data_table (void)
 	}
 	EnergyScanner eScanRes(1);
 	{
-		std::string fname_XS = "resources/table_resonance_XS.txt";
-		std::string fname_XS1 = "resources/resonance_XS.txt";
+		std::string fname_XS = "tests/table_resonance_XS.txt";
+		std::string fname_XS1 = "tests/resonance_XS.txt";
 		str.open(fname_XS, std::ios_base::trunc);
 		str<<"E[eV]\tXS resonance total [1e-20 m^2]"<<std::endl;
 		int err = 0;
@@ -709,10 +711,10 @@ void test_data_table (void)
 			double E = 0.97*eScanRes.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<1e20*ArTables.XS_resonanse(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.XS_resonance(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_table_resonance_XS.sc";
+		std::string name = "tests/test_table_resonance_XS.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_XS1<<"\" u 1:2 title \"Resonance XS from function\""<<std::endl;
 		str<<"replot \""<<fname_XS<<"\" u 1:2 title \"Resonance XS from table\""<<std::endl;
@@ -727,7 +729,7 @@ void test_resonance_cross (void)
 	std::ofstream str;
 	EnergyScanner eScan(1);
 	{
-		std::string fname_XS = "resources/resonance_XS.txt";
+		std::string fname_XS = "tests/resonance_XS.txt";
 		str.open(fname_XS, std::ios_base::trunc);
 		str<<"E[eV]\tXS resonance total [1e-20 m^2]"<<std::endl;
 		int err = 0;
@@ -735,10 +737,10 @@ void test_resonance_cross (void)
 			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<1e20*argon_cross_resonance(E)<<std::endl;
+			str<<E<<"\t"<<argon_cross_resonance(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "resources/test_resonance_XS.sc";
+		std::string name = "tests/test_resonance_XS.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_XS<<"\" u 1:2 title \"Resonance XS from function\""<<std::endl;
 		str<<"pause -1"<<std::endl;
@@ -754,8 +756,8 @@ void test_all (void)
 	std::cout<<"==============================================="<<std::endl;
 	std::cout<<std::endl;
 	std::cout<<std::endl;
-	std::cout<<"Testing phase shifts fit:"<<std::endl;
-	test_phase_shift_fit ();*/
+	*/std::cout<<"Testing phase shifts fit:"<<std::endl;
+	test_phase_shift_fit ();
 	std::cout<<"==============================================="<<std::endl;
 	std::cout<<std::endl;
 	std::cout<<std::endl;
@@ -802,7 +804,7 @@ void test_all (void)
 	std::cout<<"Testing Ar data tables:"<<std::endl;
 	test_data_table ();
 	std::cout<<"==============================================="<<std::endl;
-	std::cout<<"Testing finished:"<<std::endl;
+	std::cout<<"Testing finished."<<std::endl;
 	std::cout<<std::endl;
 	std::cout<<std::endl;
 }

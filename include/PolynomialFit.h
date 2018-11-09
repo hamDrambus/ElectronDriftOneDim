@@ -57,6 +57,7 @@ public:
 	double operator()(double point);
 	double operator()(double point, double x0); //x0 = point is recommended to use. At least x0 must be close to point, there will be large errors otherwise
 	void push (double x, double y);
+	void push_back (double x, double y);
 	void erase (std::size_t n);
 	std::size_t size (void);
 	double getX(std::size_t n);

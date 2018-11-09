@@ -62,12 +62,17 @@ Int_t PolynomialFit::operator ()(std::vector<double> &xs_in, std::vector<double>
 	TVectorD Y(N_points);
 	for (int row = 0; row < Y.GetNrows(); row++)
 		Y[row] = ys_in[offset + row];
-	TMatrixD mT = mat;
+	TMatrixD mT(mat);
 	mT.T();
+	TMatrixD In(mT*mat);//because normal assignment like mat = mT*mat does not work! First resizing must be done.
+	In.SetTol(1e-40);
 	_last_coefs.ResizeTo(_order + 1);
-	_last_coefs = ((mT*mat).Invert())*mT*Y;
+	_last_coefs = (In.Invert())*mT*Y;
 	pars_out.ResizeTo(_last_coefs);
 	pars_out = _last_coefs;
+	if (pars_out.GetNrows()!=(_order+1)) {
+		return -5;
+	}
 	return 0;
 }
 
@@ -166,6 +171,13 @@ void DataVector::push (double x, double y) //do not disrupt order
 	isCached = false;
 }
 
+void DataVector::push_back (double x, double y)//does not check that the new array is ordered, but faster
+{
+	xs.push_back(x);
+	ys.push_back(y);
+	isCached = false;
+}
+
 void DataVector::erase (std::size_t n)
 {
 	xs.erase(xs.begin()+n);
@@ -201,6 +213,10 @@ double DataVector::operator()(double point)
 	Int_t ret_code = fitter(xs, ys, n_min, n_max-n_min+1 /*==N_used*/, temp, x0_used);
 	if (0==ret_code)
 		return calculate(point);
+	if (-5==ret_code) {//matrix inversion failed
+		if (x0_used!=xs[(n_min+n_max)/2])
+			return (*this)(point, xs[(n_min+n_max)/2]);
+	}
 	return DBL_MAX;
 }
 

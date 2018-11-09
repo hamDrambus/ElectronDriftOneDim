@@ -46,6 +46,7 @@ protected:
 	std::string TM_backward_resonance_fname;
 	std::string TM_forward_elastic_fname;
 	std::string TM_forward_resonance_fname;
+	std::string total_cross_integral_fname;
 	//atm backward scatter probability and TM's for resonance are taken the same as elastic values
 	DataVector total_cross_elastic_;
 	DataVector total_cross_resonance_;
@@ -55,6 +56,7 @@ protected:
 	DataVector TM_backward_resonance_;
 	DataVector TM_forward_elastic_;
 	DataVector TM_forward_resonance_;
+	DataVector total_cross_integral_;
 	void read_data (std::ifstream &inp, DataVector &data, long double y_factor = 1);
 public:
 	ArDataTables();
@@ -66,15 +68,24 @@ public:
 	double TM_backward_resonance(double E);
 	double TM_forward_elastic(double E);
 	double TM_forward_resonance(double E);
+	double XS_integral(double E);//always from -EN_MAXIMUM_
+	double XS_integral_find(double Int, Event &event);
+	//^finds E value corresponding to Int value of integral. Int==XS_integral(returned value)
+	void setOrder(int order);
+	void setNused(int N);
+	int getOrder(void);
+	int getNused(void);
 };
 
 extern ArExperimental ArExper;
 extern ArDataTables ArTables;
 
-void argon_phase_values(long double k, unsigned int l, long double &tan, long double &sin, long double &cos);
+void argon_phase_values_exp(long double k, unsigned int l, long double &tan, long double &sin, long double &cos);
+void argon_phase_values_MERT5(long double k, unsigned int l, long double &tan, long double &sin, long double &cos);
 //E in eV, theta in radians, output is in m
 long double argon_cross_elastic_diff (long double E, long double theta);
 long double argon_cross_elastic (long double E);
+long double argon_cross_elastic_from_phases (long double E);
 long double argon_back_scatter_prob (long double E);
 long double argon_TM_forward (long double E);
 long double argon_TM_backward (long double E);

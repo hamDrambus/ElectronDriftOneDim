@@ -22,6 +22,16 @@ std::string strtoken(std::string &in, std::string break_symbs)
 	return out;
 }
 
+void ensure_file(std::string fname)
+{
+	std::string folder = fname;
+	while ((folder.back() != '\\') &&(folder.back()!='/') &&!folder.empty())
+		folder.pop_back();
+	if (!folder.empty())
+		folder.pop_back();
+	ensure_folder(folder);
+}
+
 void ensure_folder(std::string folder)
 {
 #if defined(__WIN32__)
