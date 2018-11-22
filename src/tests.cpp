@@ -55,7 +55,7 @@ void test_polynomial_fit (void)
 	str.close();
 	data1.setOrder(6);
 	data1.setNused(15);
-	data1.enable_out_value(0.5);
+	data1.set_out_value(0.5);
 	str.open(fname_fit2, std::ios_base::trunc);
 	for (int i = 0; i<150; ++i) {
 		double x = i*M_PI*3/250;
@@ -66,7 +66,7 @@ void test_polynomial_fit (void)
 	str.close();
 	data1.setOrder(2);
 	data1.setNused(10);
-	data1.disable_out_value();
+	data1.unset_out_value();
 	str.open(fname_fit3, std::ios_base::trunc);
 	for (int i = 0; i<150; ++i) {
 		double x = i*M_PI*3/250;
@@ -104,7 +104,7 @@ void test_phase_shift_fit (void)
 	str.open(fname_phase_fit, std::ios_base::trunc);
 	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
 	for (int i=0; i<600; ++i) {
-		double x = THRESH_E_-0.2 + i*(12-THRESH_E_+0.2)/599;
+		double x = THRESH_E_PHASES_-0.2 + i*(12-THRESH_E_PHASES_+0.2)/599;
 		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
 		str<<x<<"\t";
 		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l)
@@ -116,7 +116,7 @@ void test_phase_shift_fit (void)
 	str.open(fname_MERT, std::ios_base::trunc);
 	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
 	for (int i=0; i<100; ++i) {
-		double x = 1e-2 + i*(THRESH_E_-1e-2)/99;
+		double x = 1e-2 + i*(THRESH_E_PHASES_-1e-2)/99;
 		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
 		str<<x<<"\t";
 		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
@@ -381,6 +381,31 @@ void test_legendre_intregral (void)
 	std::cout<<"========================"<<std::endl;
 }
 
+void test_colored_interval (void)
+{
+	ColoredInterval ran1 (-1,0, 1);
+	ColoredInterval ran2 (0,1, 1);
+	ColoredInterval ran3 (1,4, 2);
+	ColoredInterval ran4 (2,3, 0.5);
+	ColoredInterval ran5 (2.8,3, 0.1);
+	ColoredInterval ran6 (5,6, 0.1);
+	ColoredInterval ran7 (-2,10, 5);
+	ColoredRange range1, range2;
+	std::cout<<"Sum of following intervals [from; color; to]:"<<std::endl;
+	std::cout<<"[-1; 1; 0] + [0; 1; 1] + [2; 0.5; 3] + [-2; 5; 10]"<<std::endl;
+	std::cout<<"Result: "<<std::endl;
+	range1 = ran1 + ran2 + ran4 + ran7;
+	range1.Print(std::cout);
+	std::cout<<"========================"<<std::endl;
+	std::cout<<"Sum of following intervals [from; color; to]:"<<std::endl;
+	std::cout<<"[-1; 1; 0] + [0; 1; 1] + [2; 0.5; 3] + [-2; 5; 10] + "<<std::endl;
+	std::cout<<"+ [1; 2; 4] + [2.8; 0.1; 3] + [5; 0.1; 6]"<<std::endl;
+	std::cout<<"Result: "<<std::endl;
+	range2 = range1;
+	range2 = range2 + ran3 + ran5 + ran6;
+	range2.Print(std::cout);
+	std::cout<<"========================"<<std::endl;
+}
 
 void test_factor_helper (void)
 {
@@ -489,7 +514,7 @@ void test_factor_helper (void)
 void test_diff_tot_cross (void)
 {
 	std::string fname_diff = "tests/diff_cross_10eV.txt";
-	std::string fname_tot = "tests/diff_cross_total.txt";
+	std::string fname_tot = "tests/diff_cross_total_elastic.txt";
 	std::ofstream str;
 	str.open(fname_diff, std::ios_base::trunc);
 	str<<"theta[deg]\tXS[1e-20m^2]"<<std::endl;
@@ -605,13 +630,134 @@ void test_TM_backward (void)
 	INVOKE_GNUPLOT(name);
 }
 
+void test_total_cross_all (void)
+{
+	std::ofstream str;
+	EnergyScanner eScan, eScanRes(1), eScanExt(2);
+
+	std::string fname_XS = "tests/total_elastic_XS.txt";
+	std::string fname_XS_ext = "tests/excitation_XS.txt";
+	std::string fname_XS_ext2 = "tests/excitation_XS2.txt";
+	str.open(fname_XS, std::ios_base::trunc);
+	str<<std::scientific;
+	str<<"E[eV]\tXS elastic+Feshbach resonances total [1e-20 m^2]"<<std::endl;
+	{
+		int err1 = 0, err2 = 0;
+		double E1 = eScan.Next(err1);
+		double E2 = eScanRes.Next(err2);
+		if ((0==err1)&&(0==err2)) {
+			while ((E1<E2)&&(0==err1)) {
+				str<<E1<<"\t"<<ArTables.XS_elastic(E1)+ArTables.XS_resonance(E1)<<std::endl;
+				E1 = eScan.Next(err1);
+			}
+			while (err2==0) {
+				str<<E2<<"\t"<<ArTables.XS_elastic(E2)+ArTables.XS_resonance(E2)<<std::endl;
+				E2 = eScanRes.Next(err2);
+			}
+			while (E2>E1) {
+				E1 = eScan.Next(err1);
+				if (0!=err1)
+					break;
+			}
+			while (0==err1) {
+				str<<E1<<"\t"<<ArTables.XS_elastic(E1)+ArTables.XS_resonance(E1)<<std::endl;
+				E1 = eScan.Next(err1);
+			}
+		}
+	}
+	eScan.Reset();
+	eScanRes.Reset();
+	str.close();
+
+	int err = 0;
+	str.open(fname_XS_ext, std::ios_base::trunc);
+	str<<std::scientific;
+	str<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
+	while (true) {
+			double E = eScanExt.Next(err);
+			if (0!=err)
+				break;
+			double XS_S=0, XS_P=0, XS_EXT=0, XS_ION=0;
+			for (int j =0, end_ = ArExper.ionizations.size(); j!=end_; ++j) {
+				XS_ION+=ArExper.ionizations[j](E);
+			}
+			for (int j =0, end_ = ArExper.excitations.size(); j!=end_; ++j) {
+				std::string name = ArExper.excitations[j].get_name();
+				if (name.find("S")!=std::string::npos)
+					XS_S+=ArExper.excitations[j](E);
+				if (name.find("P")!=std::string::npos)
+					XS_P+=ArExper.excitations[j](E);
+				XS_EXT+=ArExper.excitations[j](E);
+			}
+			XS_S = std::max(1e-4, XS_S); //for logscale
+			XS_P = std::max(1e-4, XS_P);
+			XS_EXT = std::max(1e-4, XS_EXT);
+			XS_ION = std::max(1e-4, XS_ION);
+			str<<E<<"\t"<<XS_S<<"\t"<<XS_P<<"\t"<<XS_EXT<<"\t"<<XS_ION<<std::endl;
+		}
+	str.close();
+
+	str.open(fname_XS_ext2, std::ios_base::trunc);
+	str<<std::scientific;
+	str<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
+	for (int i=0;i<5001;++i) {
+		double E = 10.5+ i * (1000-10.5)/5000;
+		double XS_S=0, XS_P=0, XS_EXT=0, XS_ION=0;
+		for (int j =0, end_ = ArExper.ionizations.size(); j!=end_; ++j) {
+			XS_ION+=ArExper.ionizations[j](E);
+		}
+		for (int j =0, end_ = ArExper.excitations.size(); j!=end_; ++j) {
+			std::string name = ArExper.excitations[j].get_name();
+			if (name.find("S")!=std::string::npos)
+				XS_S+=ArExper.excitations[j](E);
+			if (name.find("P")!=std::string::npos)
+				XS_P+=ArExper.excitations[j](E);
+			XS_EXT+=ArExper.excitations[j](E);
+		}
+		XS_S = std::max(1e-4, XS_S); //for logscale
+		XS_P = std::max(1e-4, XS_P);
+		XS_EXT = std::max(1e-4, XS_EXT);
+		XS_ION = std::max(1e-4, XS_ION);
+		str<<E<<"\t"<<XS_S<<"\t"<<XS_P<<"\t"<<XS_EXT<<"\t"<<XS_ION<<std::endl;
+	}
+	str.close();
+
+	std::string name = "tests/test_XS_all.sc";
+	str.open(name, std::ios_base::trunc);
+	str<<"set logscale x"<<std::endl;
+	str<<"set logscale y"<<std::endl;
+	str<<"plot \""<<fname_XS<<"\" u 1:2 w lines lc rgb \"#000000\" title \"XS elastic + Fishbach resonance\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext<<"\" u 1:2 w lines lc rgb \"#0000CC\" title \"XS S excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext<<"\" u 1:3 w lines lc rgb \"#10CA73\" title \"XS P excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext<<"\" u 1:4 w lines lc rgb \"#D90F2B\" title \"XS sum excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext<<"\" u 1:5 w lines lc rgb \"#D90FD0\" title \"XS ionization\""<<std::endl;
+	str<<"pause -1"<<std::endl;
+	str.close();
+	INVOKE_GNUPLOT(name);
+
+	name = "tests/test_XS_ext.sc";
+	str.open(name, std::ios_base::trunc);
+	str<<"set logscale x"<<std::endl;
+	str<<"set logscale y"<<std::endl;
+	str<<"plot \""<<fname_XS_ext2<<"\" u 1:2 w lines lc rgb \"#0000CC\" title \"XS S excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext2<<"\" u 1:3 w lines lc rgb \"#10CA73\" title \"XS P excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext2<<"\" u 1:4 w lines lc rgb \"#D90F2B\" title \"XS sum excitation\""<<std::endl;
+	str<<"replot \""<<fname_XS_ext2<<"\" u 1:5 w lines lc rgb \"#D90FD0\" title \"XS ionization\""<<std::endl;
+	str<<"pause -1"<<std::endl;
+	str.close();
+	INVOKE_GNUPLOT(name);
+
+}
+
+//Dependent on previous tests.
+//This function only tests that interpolation/fit of ArDataTables works properly.
 void test_data_table (void)
 {
 	std::ofstream str;
 	EnergyScanner eScan;
 	{
-		std::string fname_XS = "tests/table_total_XS.txt";
-		std::string fname_XS1 = "tests/diff_cross_total.txt";
+		std::string fname_XS = "tests/table_total_elastic_XS.txt";
+		std::string fname_XS1 = "tests/diff_cross_total_elastic.txt";
 		str.open(fname_XS, std::ios_base::trunc);
 		str<<"E[eV]\tXS elastic total [1e-20 m^2]"<<std::endl;
 		int err = 0;
@@ -722,6 +868,15 @@ void test_data_table (void)
 		str.close();
 		INVOKE_GNUPLOT(name);
 	}
+	{
+		std::string fname_XS = "data_derived/total_cross_section_integral.dat";
+		std::string name = "tests/test_table_XS_integral.sc";
+		str.open(name, std::ios_base::trunc);
+		str<<"plot \""<<fname_XS<<"\" u 1:2 w lines title \"XS integral\""<<std::endl;
+		str<<"pause -1"<<std::endl;
+		str.close();
+		INVOKE_GNUPLOT(name);
+	}
 }
 
 void test_resonance_cross (void)
@@ -751,60 +906,58 @@ void test_resonance_cross (void)
 
 void test_all (void)
 {
-	/*std::cout<<"Testing polynimial fit:"<<std::endl;
+	/*
+	std::cout<<"Testing polynimial fit:"<<std::endl;
 	test_polynomial_fit ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
-	*/std::cout<<"Testing phase shifts fit:"<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
+	std::cout<<"Testing phase shifts fit:"<<std::endl;
 	test_phase_shift_fit ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+	*/
 	std::cout<<"Testing factor helping class:"<<std::endl;
 	test_factor_helper ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing legendre polynomials:"<<std::endl;
 	test_legendre_polynomial ();
-	/*std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
+	std::cout<<"Testing colored intervals:"<<std::endl;
+	test_colored_interval ();
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+	/*
 	std::cout<<"Testing integrals of legendre polynomials:"<<std::endl;
-	test_legendre_intregral ();*/
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	test_legendre_intregral ();
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing differential cross section:"<<std::endl;
 	test_diff_tot_cross ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing backward scatter probability:"<<std::endl;
 	test_backward_scatter_prob ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing forward momentum transfer factor:"<<std::endl;
 	test_TM_forward ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing backward momentum transfer factor:"<<std::endl;
 	test_TM_backward ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+	*/
 	std::cout<<"Testing resonance cross section:"<<std::endl;
 	test_resonance_cross ();
-	std::cout<<"==============================================="<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
+	std::cout<<"Testing total cross sections:"<<std::endl;
+	test_total_cross_all ();
+	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
+
 	std::cout<<"Testing Ar data tables:"<<std::endl;
 	test_data_table ();
 	std::cout<<"==============================================="<<std::endl;
-	std::cout<<"Testing finished."<<std::endl;
-	std::cout<<std::endl;
-	std::cout<<std::endl;
+
+	std::cout<<"Testing finished."<<std::endl<<std::endl<<std::endl;
 }

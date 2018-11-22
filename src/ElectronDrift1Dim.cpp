@@ -16,7 +16,7 @@ int main(int argn, char * argv[]) {
 	std::string root_fname = "Output/eData_3Td_.root";
 	double Td = 3; //=E/N in 1e-21 in Si
 	unsigned int seed = 42;
-	unsigned int num_of_electrons = 1000;
+	unsigned int num_of_electrons = 1;
 	double pressure = 1.015e5;
 	double temperature = 87;
 	if (argn!=1) {
@@ -34,7 +34,7 @@ int main(int argn, char * argv[]) {
 	}
 	ensure_file(root_fname);
 	ensure_file("tests/t");
-	//test_all();
+	test_all();
 	//std::cout<<"Enter something: ";
 	//std::cin>>a;
 	//return 0;

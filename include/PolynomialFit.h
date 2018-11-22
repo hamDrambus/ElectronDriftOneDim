@@ -38,27 +38,37 @@ protected:
 	Int_t N_used;
 	Int_t cache_n_from, cache_n_to;
 	bool isCached;
-	double out_value;
-	bool use_out_value;
+
+	bool use_left, use_right, is_set_left, is_set_right;
+	double left_value, right_value;
 public:
 	DataVector(Int_t fit_order, Int_t N_used);
-	DataVector(std::vector < double> xx, std::vector<double> yy, Int_t fit_order, Int_t N_used);
+	DataVector(std::vector < double> &xx, std::vector<double> &yy, Int_t fit_order, Int_t N_used);
 	~DataVector();
 
-	void initialize(std::vector < double> xx, std::vector<double> yy,  Int_t fit_order, Int_t N_used);
+	void initialize(std::vector < double> &xx, std::vector<double> &yy,  Int_t fit_order, Int_t N_used);
 	void setOrder(Int_t ord);
 	Int_t getOrder(void);
 	void setNused(Int_t ord);
 	Int_t getNused(void);
 	std::vector<double> getCoefs(void);
-	void enable_out_value(double val);
-	void disable_out_value();
+
+	//precedence goes to use_left-/right-most methods.
+	void use_leftmost(bool use);
+	void use_rightmost(bool use);
+	void set_leftmost(double val);
+	void unset_leftmost(void);
+	void set_rightmost(double val);
+	void unset_rightmost(void);
+	void set_out_value(double val); //out of range value
+	void unset_out_value();
 
 	double operator()(double point);
-	double operator()(double point, double x0); //x0 = point is recommended to use. At least x0 must be close to point, there will be large errors otherwise
+	double operator()(double point, double x0); //x0 = point is recommended to use. At least x0 must be close to point, or there will be large errors otherwise
 	void push (double x, double y);
 	void push_back (double x, double y);
 	void erase (std::size_t n);
+	void clear (void);
 	std::size_t size (void);
 	double getX(std::size_t n);
 	double getY(std::size_t n);

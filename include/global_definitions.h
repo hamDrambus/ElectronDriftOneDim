@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 #if defined(__WIN32__)
 #define NOMINMAX
 #include <windows.h>
@@ -14,8 +15,12 @@
 #endif
 
 #define L_MAX_ 10
-#define EN_MINIMUM 5e-3
-#define THRESH_E_ 0.24
+#define EN_MINIMUM_ 5e-3
+#define XS_EL_EN_MAXIMUM_ 20
+#define XS_EL_EN_MINIMUM_ 1e-3
+#define PHASES_EN_MAXIMUM_ 12
+#define PHASES_EN_MINIMUM_ 5e-3
+#define THRESH_E_PHASES_ 0.24
 //^MERT 5 is applied only below this energy for backward probability and TM factors
 #define THRESH_E_XS_ 1
 //^MERT 5 is applied only below this energy for total cross section
@@ -28,7 +33,7 @@
  * From 5e-3 to 1 eV MERT5 PS are used for total elastic XS.
  * Experimental PS are used otherwise.
  */
-#define EN_MAXIMUM_ 18
+#define EN_MAXIMUM_ 16.0
 //^when elastic XS is still significantly larger than inelastic
 #define EN_CUT_ 0.0
 #define En_3o2_ 11.103
@@ -36,14 +41,16 @@
 #define Width_3o2_ 2.3e-3
 #define Width_1o2_ 2.2e-3
 //^in eV
-#define DRIFT_DISTANCE_ 1e-5
+#define DRIFT_DISTANCE_ 1e-3
 //^in m
+#define SKIP_HISTORY_ 199
 
 const long double e_charge_SIconst = 1.60217662e-19; //in coulombs (SI)
 const long double e_mass_SIconst = 9.10938356e-31; //in kg (SI)
 const long double e_mass_eVconst = 5.109989461e5; //in eV
 const long double h_bar_SIconst = 1.054571800e-34; //in SI
 const long double a_bohr_SIconst = 5.2917721092e-1; //in meters (SI) multiplied by e10 for XS to be in 1e-20 m2
+const long double Ry_eVconst = 13.605693; //Rydberg constant
 const long double a_h_bar_2e_m_e_SIconst = 2.711063352e-1; //in SI a_bohr*sqrt(2*Me*e)/h_bar
 const long double boltzmann_SIconst = 1.38064852e-23; //SI
 const double resonance_time_const = 2.9918725e-13;//in s. = h_bar /Width
@@ -76,8 +83,10 @@ struct Event
 	double time_start;
 	double delta_time;
 	double delta_time_full; //with resonance delay
-	enum ProcessType : short {None = 0, Elastic = 1, Resonance = 2, Overflow = 3};
-	short process;
+	enum ProcessType : short {None = -1, Elastic = 0, Resonance = 1, Ionization = 2, Overflow = -2};
+	short process; //2 is ionization and from 3 to max are excitations (process = ID + 2).
+	std::vector<double> CrossSections; //for each process starting from Elastic=1
+	std::vector<double> CrossSectionsSum; //helper for random process selection
 	//Debug info:
 	double deb_log_rand; //-ln R * coef. which is equal to integral of XS
 	double deb_solver_y_left;

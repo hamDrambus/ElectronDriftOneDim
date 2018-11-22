@@ -79,18 +79,19 @@ Int_t PolynomialFit::operator ()(std::vector<double> &xs_in, std::vector<double>
 //=========================================================
 
 DataVector::DataVector(Int_t fit_order, Int_t N_used_): x0_used(0), isCached(false), cache_n_from(0), cache_n_to(0),
-		fitter(fit_order), use_out_value(false), out_value(0)
+		fitter(fit_order), use_left(false), use_right(false), is_set_left(false),
+		is_set_right (false), left_value(DBL_MAX), right_value(DBL_MAX)
 {
 	N_used = std::max(1, N_used_);
 }
 
-DataVector::DataVector(std::vector < double> xx, std::vector<double> yy, Int_t fit_order, Int_t N_used_): DataVector(fit_order, N_used_)
+DataVector::DataVector(std::vector < double> &xx, std::vector<double> &yy, Int_t fit_order, Int_t N_used_): DataVector(fit_order, N_used_)
 {
 	initialize(xx, yy, fit_order, N_used_);
 }
 DataVector::~DataVector() {}
 
-void DataVector::initialize(std::vector < double> xx, std::vector<double> yy,  Int_t fit_order, Int_t N_used_)
+void DataVector::initialize(std::vector < double> &xx, std::vector<double> &yy,  Int_t fit_order, Int_t N_used_)
 {
 	N_used = std::max(1, N_used_);
 	fitter.setOrder(fit_order);
@@ -146,13 +147,42 @@ std::vector<double> DataVector::getCoefs(void)
 	return out;
 }
 
-void DataVector::enable_out_value(double val)
+void DataVector::use_leftmost(bool use)
 {
-	use_out_value = true;
-	out_value = val;
+	use_left = use;
 }
-void DataVector::disable_out_value()
-{	use_out_value = false;}
+void DataVector::use_rightmost(bool use)
+{
+	use_right = use;
+}
+void DataVector::set_leftmost(double val)
+{
+	is_set_left = true;
+	left_value = val;
+}
+void DataVector::unset_leftmost(void)
+{
+	is_set_left = false;
+}
+void DataVector::set_rightmost(double val)
+{
+	is_set_right = true;
+	right_value = val;
+}
+void DataVector::unset_rightmost(void)
+{
+	is_set_right = false;
+}
+void DataVector::set_out_value(double val)
+{
+	set_leftmost(val);
+	set_rightmost(val);
+}
+void DataVector::unset_out_value(void)
+{
+	unset_leftmost();
+	unset_rightmost();
+}
 
 void DataVector::push (double x, double y) //do not disrupt order
 {
@@ -185,6 +215,13 @@ void DataVector::erase (std::size_t n)
 	isCached = false;
 }
 
+void DataVector::clear (void)
+{
+	xs.clear();
+	ys.clear();
+	isCached = false;
+}
+
 std::size_t DataVector::size (void)
 {	return std::min(xs.size(), ys.size());}
 
@@ -198,9 +235,18 @@ double DataVector::operator()(double point)
 {
 	if (xs.empty()||ys.empty())
 		return DBL_MAX;
-	if (use_out_value)
-		if ((point < xs.front()) || (point>xs.back()))
-			return out_value;
+	if (point < xs.front()) {
+		if (use_left)
+			return ys.front(); //TODO: maybe add scaling
+		if (is_set_left)
+			return left_value;
+	}
+	if (point > xs.back()) {
+		if (use_right)
+			return ys.back();
+		if (is_set_right)
+			return right_value;
+	}
 	int n_min, n_max;
 	get_indices(point, n_min, n_max);
 	if (isCached)

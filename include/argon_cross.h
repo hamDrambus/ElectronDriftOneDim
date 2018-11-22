@@ -10,27 +10,57 @@
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <tgmath.h>
 #include "global_definitions.h"
 #include "PolynomialFit.h"
 #include "LegendrePolynomials.h"
+#include "ColoredInterval.h"
 
 class EnergyScanner
 {
 protected:
 	unsigned int i;
-	int type_; //0 - from 5e-3 to 13 eV. other - 10.85 - 11.7 eV - near resonance
+	enum ScanType: short {ElasticXS = 0, ResonanceXS = 1, ResonanceDiffXS = 2,
+		DiffXS = 3,	InelasticXS = 4, ElasticResXS = 5, XSIntegral = 6, PlotElastic = 7,
+		PlotResonance = 8, PlotDiff = 9, PlotInelastic = 10, PlotAllXS = 11} type_;
+	ColoredRange energy_range_;
 public:
-	EnergyScanner(int type = 0);
+	EnergyScanner(ScanType type);
 	long double Next(int& err);
 	void Reset(void);
 };
 
+class InelasticProcess
+{
+protected:
+	std::string name_;
+	DataVector exp_XS_;
+	unsigned int ID_;
+	double En_threshold_;
+	double Oscillator_strength_;
+public:
+	InelasticProcess(std::string name, unsigned int ID, double En, double F, std::vector<double> &Ens, std::vector<double> &XSs);
+	double operator ()(double E); //returns cross section in 1e-16 cm^2
+	double BB_XS(double E);
+	double Exp_XS(double E);
+	double get_En_thresh (void) const;
+	std::string get_name (void) const;
+	unsigned int get_ID (void) const;
+};
+
 class ArExperimental
 {
+protected:
+	void read_inelastic(std::ifstream &inp, std::vector<InelasticProcess> &to);
 public:
 	std::vector<DataVector> phase_shifts_; //TODO: account for phase plus and phase minus
 	DataVector total_elastic_cross;
+	std::vector<InelasticProcess> excitations;
+	std::vector<InelasticProcess> ionizations;
+	short max_process_ID;
+	double E_Ionization;
 	ArExperimental(void);
+	InelasticProcess * FindInelastic(short ID);
 	unsigned int max_L (long double k);
 	long double phase_shift (long double k, unsigned int l);
 };
@@ -60,16 +90,18 @@ protected:
 	void read_data (std::ifstream &inp, DataVector &data, long double y_factor = 1);
 public:
 	ArDataTables();
-	double XS_elastic(double E);
-	double XS_resonance(double E);
+	long double CrossSection (double E, short type);
+	long double TotalCrossSection (double E);
+	long double XS_elastic(double E);
+	long double XS_resonance(double E);
 	double P_backward_elastic(double E);
 	double P_backward_resonance(double E);
 	double TM_backward_elastic(double E);
 	double TM_backward_resonance(double E);
 	double TM_forward_elastic(double E);
 	double TM_forward_resonance(double E);
-	double XS_integral(double E);//always from -EN_MAXIMUM_
-	double XS_integral_find(double Int, Event &event);
+	long double XS_integral(double E);//always from -EN_MAXIMUM_
+	long double XS_integral_find(long double Int, Event &event);
 	//^finds E value corresponding to Int value of integral. Int==XS_integral(returned value)
 	void setOrder(int order);
 	void setNused(int N);

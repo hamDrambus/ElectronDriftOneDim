@@ -1,6 +1,6 @@
 #include "Manager.h"
 
-Manager::Manager(UInt_t RandomSeed) : is_ready_(false), eField_(0), Concentration_(0), Coefficient_(0)
+Manager::Manager(UInt_t RandomSeed) : is_ready_(false), eField_(0), Concentration_(0), Coefficient_(0), skip_counter_(0)
 {
 	random_generator_ = new TRandom1(RandomSeed); //TRandom3 is a default. TRandom1 is slower but better
 	InitTree();
@@ -14,9 +14,6 @@ void Manager::InitTree (void)
 	sim_data_->Branch("energy_final", &event_.En_finish);
 	sim_data_->Branch("energy_average", &event_.En_avr);
 
-	/*sim_data_->Branch("velocity_initial", &event_.velocity_start);
-	sim_data_->Branch("velocity_final", &event_.velocity_collision);
-	sim_data_->Branch("velocity_final", &event_.velocity_finish);*/
 	sim_data_->Branch("time_initial", &event_.time_start);
 	sim_data_->Branch("time_delta", &event_.delta_time);
 	sim_data_->Branch("time_delta_full", &event_.delta_time_full);
@@ -37,7 +34,7 @@ void Manager::Clear(void)
 {
 	is_ready_ = false;
 	sim_data_->Delete();
-	last_pos.clear();
+	skip_counter_ = 0;
 	InitTree();
 }
 
@@ -88,11 +85,7 @@ long double Manager::XS_integral(long double from, long double to)
 			dx = 0.02 + (E_abs-1)*(0.1-0.02)/(9.7); //linear from 0.02 to 0.1 from 1 to 10.7 eV
 			goto l_out;
 		}
-		if (E_abs<11.8) {
-			dx = 0.01; //0.01 from 10.7 to 11.8 eV (resonance)
-			goto l_out;
-		}
-		dx = 0.1; //above 11.8
+		dx = 0.001; //above 10.7
 		l_out:
 		E += dx;
 		if (E > to)
@@ -106,7 +99,10 @@ void Manager::Initialize(Event &event)
 {
 	if (!is_ready_)
 		return;
-	event.En_start = 1 + 6*random_generator_->Uniform();
+	event.CrossSections.resize(ArExper.max_process_ID + 2, 0); //2==Elastic + Resonance
+	event.CrossSectionsSum.resize(ArExper.max_process_ID + 2, 0);
+	//event.En_start = 1 + 6*random_generator_->Uniform();
+	event.En_start = 12;
 	event.En_collision = 0;
 	event.En_finish = 0;
 	event.pos_start = 0;
@@ -165,8 +161,15 @@ void Manager::Solve (long double LnR, Event &event)
 void Manager::NewSolve (long double LnR, Event &event)
 {
 	event.deb_log_rand = LnR;
-	double Int = ArTables.XS_integral(event.En_start);
-	event.En_collision = ArTables.XS_integral_find(Int+LnR, event);
+	double Int = ArTables.XS_integral(std::fabs(event.En_start));
+	if (event.En_start < 0) {
+		if (Int>LnR) {
+			event.En_collision = -ArTables.XS_integral_find(Int-LnR, event);
+		} else {
+			event.En_collision = ArTables.XS_integral_find(LnR-Int, event); //e passes through 0 energy.
+		}
+	} else
+		event.En_collision = ArTables.XS_integral_find(Int+LnR, event);
 }
 
 void Manager::DoStepLength(Event &event)
@@ -199,7 +202,7 @@ void Manager::DoStepLength(Event &event)
 	event.En_avr = std::fabs(event.En_start) + eField_*vel_0*event.delta_time / 4.0 + e_charge_SIconst*std::pow(eField_*event.delta_time, 2) / (6 * e_mass_SIconst);
 	
 	//!!!ENERGY CUT!!! TODO:remove
-	event.En_collision = (event.En_collision>0) ? std::max(event.En_collision, EN_CUT_) : std::min(event.En_collision, -EN_CUT_);
+	event.En_collision = (std::fabs(event.En_collision)<EN_CUT_) ? ((event.En_collision>0) ? EN_CUT_ : EN_CUT_): event.En_collision;
 	//!!!ENERGY CUT!!! TODO:remove
 	event_ = event;
 }
@@ -208,35 +211,75 @@ void Manager::DoScattering(Event &event)
 {
 	if (!is_ready_)
 		return;
-	long double XS_elastic = ArTables.XS_elastic(std::fabs(event.En_collision));
-	long double XS_resonance = ArTables.XS_resonance(std::fabs(event.En_collision));
-	if (XS_resonance > 0) {
-		if (random_generator_->Uniform() < (XS_resonance / (XS_resonance + XS_elastic)))
-			event.process = Event::Resonance;
-		else
-			event.process = (event.process == Event::Overflow ? event.process : Event::Elastic);
-	} else {
-		event.process = (event.process == Event::Overflow ? event.process : Event::Elastic);
+	for (int i=0, end_ = event.CrossSections.size(); i!=end_; ++i) {
+		event.CrossSections[i] = ArTables.CrossSection(std::fabs(event.En_collision), i);//process type == index in cross section array.
+		event.CrossSectionsSum[i] = std::max(event.CrossSections[i], 0.0) + ((i==0) ? 0.0 : event.CrossSectionsSum[i-1]);
 	}
-	double BackScatterProb = (event.process == Event::Resonance ? ArTables.P_backward_resonance(std::fabs(event.En_collision)) :
-		ArTables.P_backward_elastic(std::fabs(event.En_collision)));
+	for (int i=0, end_ = event.CrossSections.size(); i!=end_; ++i)
+		event.CrossSectionsSum[i] /= event.CrossSectionsSum[end_-1];
+
+	bool is_overflow = (event.process==Event::Overflow);
+	double R1 = random_generator_->Uniform();
+	for (int i=0, end_ = event.CrossSections.size(); i!=end_; ++i)
+		if (R1<event.CrossSectionsSum[i]) {
+			event.process = i;
+			break;
+		}
+
+	double BackScatterProb;
+	switch (event.process) {
+		case (Event::Resonance): {
+			BackScatterProb = ArTables.P_backward_resonance(std::fabs(event.En_collision));
+			break;
+		}
+		case (Event::Elastic): {
+			BackScatterProb = ArTables.P_backward_elastic(std::fabs(event.En_collision));
+			break;
+		}
+		default: {
+			BackScatterProb = 0.5;
+		}
+	}
+	bool is_backward = (random_generator_->Uniform() < BackScatterProb);
+	double EnergyLoss = 0;
 	long double gamma_f = e_mass_eVconst/Ar_mass_eVconst;
-	long double TM_factor;
-	if (random_generator_->Uniform() < BackScatterProb) {
-		event.En_finish = -event.En_collision;
-		TM_factor = (event.process == Event::Resonance ? ArTables.TM_backward_resonance(std::fabs(event.En_collision)) :
-			ArTables.TM_backward_elastic(std::fabs(event.En_collision)));
-	} else {
-		event.En_finish = event.En_collision;
-		TM_factor = (event.process == Event::Resonance ? ArTables.TM_forward_resonance(std::fabs(event.En_collision)) :
-			ArTables.TM_forward_elastic(std::fabs(event.En_collision)));
+	switch (event.process) {
+		case (Event::Resonance): {
+			double TM_factor = is_backward ? ArTables.TM_backward_resonance(std::fabs(event.En_collision))
+					: ArTables.TM_forward_resonance(std::fabs(event.En_collision));
+			EnergyLoss = 2 * TM_factor*event.En_collision*gamma_f /pow(1 + gamma_f, 2);
+			break;
+		}
+		case (Event::Elastic): {
+			double TM_factor = is_backward ? ArTables.TM_backward_elastic(std::fabs(event.En_collision))
+					: ArTables.TM_forward_elastic(std::fabs(event.En_collision));
+			EnergyLoss = 2 * TM_factor*event.En_collision*gamma_f /pow(1 + gamma_f, 2);
+			break;
+		}
+		case (Event::Ionization): {
+			InelasticProcess *p = ArExper.FindInelastic(event.process-Event::Ionization);
+			if (NULL!=p) {
+				EnergyLoss = (event.En_collision > 0) ? p->get_En_thresh() : -p->get_En_thresh();
+				EnergyLoss += (event.En_collision - EnergyLoss)/2.0; //Consider that residual energy is equally divided between 2 electrons
+			}
+			break;
+		}
+		default: {
+			InelasticProcess *p = ArExper.FindInelastic(event.process-Event::Ionization);
+			if (NULL!=p)
+				EnergyLoss = (event.En_collision > 0) ? p->get_En_thresh() : -p->get_En_thresh();
+		}
 	}
-	event.En_finish =event.En_finish - 2 * TM_factor*event.En_finish*gamma_f /pow(1 + gamma_f, 2);
+	event.En_finish = event.En_collision - EnergyLoss;
+	if (is_backward)
+		event.En_finish = -event.En_finish;
 
+	event.delta_time_full = event.delta_time;
 	if (event.process == Event::Resonance) {
-		event.delta_time_full = event.delta_time + random_generator_->Exp(resonance_time_const);
+		event.delta_time_full += random_generator_->Exp(resonance_time_const);
 	}
-
+	if (is_overflow)
+		event.process = Event::Overflow;
 	event_ = event;
 }
 
@@ -244,7 +287,12 @@ void Manager::PostStepAction(Event &event)
 {
 	if (!is_ready_)
 		return;
-	sim_data_->Fill();
+	if ((0==skip_counter_)||(IsFinished(event))) {
+		sim_data_->Fill();
+	}
+	++skip_counter_;
+	if (skip_counter_>SKIP_HISTORY_)
+		skip_counter_=0;
 }
 
 void Manager::DoGotoNext(Event &event)
@@ -278,6 +326,7 @@ bool Manager::IsFinished(Event &event)
 	if (!is_ready_)
 		return true;
 	return !(event.pos_finish < DRIFT_DISTANCE_);
+	//return !((event.pos_finish < DRIFT_DISTANCE_)&&(event.pos_finish> -10*DRIFT_DISTANCE_));
 }
 
 void Manager::LoopSimulation(void)
@@ -288,7 +337,6 @@ void Manager::LoopSimulation(void)
 	while (!IsFinished(event_)) {
 		DoStep(event_);
 	}
-	last_pos.push_back(event_.pos_finish);
 }
 
 void Manager::WriteHistory(std::string root_fname)
@@ -303,9 +351,17 @@ void Manager::WriteHistory(std::string root_fname)
 	root_fname.pop_back();
 	root_fname.pop_back();
 	root_fname.pop_back();
-	str.open(root_fname+"txt", std::ios_base::trunc);
-	for (auto i = last_pos.begin(), end_ = last_pos.end(); i!=end_; ++i) {
-		str<<*i<<std::endl;
+	root_fname.pop_back();
+	str.open(root_fname+"process_legend.txt", std::ios_base::trunc);
+	str<<"//tree->process value | meaning"<<std::endl;
+	str<<Event::Overflow<<"\tOverflow (energy exceeds "<<EN_MAXIMUM_<<" eV)"<<std::endl;
+	str<<Event::None<<"\tNone"<<std::endl;
+	str<<Event::Elastic<<"\tElastic scattering"<<std::endl;
+	str<<Event::Resonance<<"\tFeshbach resonances"<<std::endl;
+	for (int proc = Event::Ionization, end_ = ArExper.max_process_ID + Event::Ionization; proc!=end_; ++proc) {
+		InelasticProcess *p = ArExper.FindInelastic(proc-Event::Ionization);
+		if (NULL!=p)
+			str<<proc<<"\t"<<p->get_name()<<std::endl;
 	}
 	str.close();
 }

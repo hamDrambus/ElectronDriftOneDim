@@ -17,7 +17,7 @@ protected:
 	TRandom * random_generator_;
 	TTree * sim_data_;
 	Event event_;
-	std::vector<double> last_pos;
+	int skip_counter_;
 	//Event current_event;
 	void DoStepLength (Event &event);
 	void Solve (long double LnR, Event &event);
