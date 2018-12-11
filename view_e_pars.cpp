@@ -1,21 +1,21 @@
  {
-	TH1D* histE = new TH1D ("EnergyC [eV]","EnergyC [eV]",300,0, 14);
-	TH1D* histAvr = new TH1D ("EnergyA [eV]","EnergyA [eV]",300,0, 14);
+	TH1D* histE = new TH1D ("EnergyC [eV]","EnergyC [eV]",500,0, 15);
+	TH1D* hist_dE = new TH1D ("Energy increase in resonance [eV]","Energy increase in resonance [eV]",300,-0.3, 0.3);
+	TH1D* hist_dE_abs = new TH1D ("Energy abs increase in resonance [eV]","Energy abs increase in resonance [eV]",300,0.0, 0.3);
+	TH1D* hist_Eloss = new TH1D ("Energy loss in resonance [eV]","Energy loss in resonance [eV]",300,0, 0.06);
 	TH1D* hist_dT = new TH1D ("dTime [s]","dTime [s]",300,4e-16, 1e-12);
 	TH1D* hist_dx = new TH1D ("dX [m]","dX [m]",300,-1e-6, 4e-6);
-	TH1D* hist_V_drift = new TH1D ("Drift velocity [m/s]","Drift velocity [m/s]",300,0, 1e4);
-	TH1D* hist_T_drift = new TH1D ("Drift time [s]","Drift time [s]",300,0, 1e-6);
+	TH1D* hist_V_drift = new TH1D ("Drift velocity [m/s]","Drift velocity [m/s]",300,0, 2e4);
+	TH1D* hist_T_drift = new TH1D ("Drift time [s]","Drift time [s]",300,0, 8e-7);
 	TH1D* histEfinalAvr = new TH1D ("Energy final avr","Energy final avr",300,0, 20);
-	TH1D* histEfinal = new TH1D ("Energy final collision","Energy final collision",300,0, 14);
-	TH1D* histE_atT = new TH1D ("EnergyC at time ","EnergyC at time",300,0, 14);
-	TH1D* histAvr_atT = new TH1D ("EnergyA at time","EnergyA at time",300,0, 14);
+	TH1D* histEfinal = new TH1D ("Energy final collision","Energy final collision",300,0, 15);
 	
 	int DEF_W = 900, DEF_H = 700;
 	double E_at_time = 1e-11;
 	double dt = 6e-12;
-	double DRIFT_DISTANCE = 1e-3;
-	std::string fname1("Output/v12/eData_3Td.root");
-	std::string fname2("Output/v12/eData_3Td_1.root");
+	double DRIFT_DISTANCE = 1e-5;
+	std::string fname1("Output/v15.3/eData_7.0Td.root");
+	std::string fname2("Output/v/eData_3Td_1.root");
 	
 	double En_start;
 	double En_collision;
@@ -76,17 +76,31 @@
 	    for (unsigned long int i=0;i!=_end_;++i){
 		    tree->GetEntry(i);
 		    histE->Fill(std::fabs(En_collision));
-		    histAvr->Fill(En_avr);
 		    hist_dT->Fill(delta_time_full);
 		    hist_dx->Fill(delta_x);
+		    
+		    //if ((std::fabs(En_collision)<11.5)&&((std::fabs(En_collision)>10.8))) {
+		    if ((1==process)||(2==process)) {
+			hist_dE->Fill(std::fabs(En_collision) - std::fabs(En_start));
+			hist_dE_abs->Fill(std::fabs(En_collision - En_start));
+			hist_Eloss->Fill(std::fabs(En_collision)- std::fabs(En_finish));
+		    }
 
 		    switch (process) {
 		      case 0:{
 			  ++num_of_elastic;
 			  break;
 		      }
-		      case 1:{
+		      case 1:
+		      case 2:{
 			  ++num_of_resonance;
+			  break;
+		      }
+		      case 3: {
+			  ++num_of_ions;
+			  break;
+		      }
+		      case -1:{
 			  break;
 		      }
 		      case -2:{
@@ -105,16 +119,10 @@
 			histEfinalAvr->Fill(En_avr);
 			histEfinal->Fill(std::fabs(En_collision));
 		    }
-		    if ((time_start<(E_at_time+dt))&&(time_start>(E_at_time-dt))) {
-			histAvr_atT->Fill(En_avr);
-			histE_atT->Fill(std::fabs(En_collision));
-		    }
 	    }
 	}
 	TCanvas *c_ = new TCanvas ("e energy before collision", "e energy before collision", DEF_W, DEF_H);
 	histE->Draw();
-	TCanvas *c_1 = new TCanvas ("e energy average", "e energy average", DEF_W, DEF_H);
-	histAvr->Draw();
 	TCanvas *c_2 = new TCanvas ("Delta time", "Delta time", DEF_W, DEF_H);
 	hist_dT->Draw();
 	TCanvas *c_3 = new TCanvas ("Drift velocity", "Drift velocity", DEF_W, DEF_H);
@@ -127,27 +135,31 @@
 	histEfinalAvr->Draw();
 	TCanvas *c_6 = new TCanvas ("e energy after drift before collision", "e energy after drift before collision", DEF_W, DEF_H);
 	histEfinal->Draw();
-	//TCanvas *c_7 = new TCanvas ("e energy before collision at fixed t", "e energy before collision at fixed t", DEF_W, DEF_H);
-	//histE_atT->Draw();
-	//TCanvas *c_8 = new TCanvas ("e average E at fixed t", "e average E at fixed t", DEF_W, DEF_H);
-	//histAvr_atT->Draw();
+	TCanvas *c_7 = new TCanvas ("e delta E in resonance [eV]", "e delta E in resonance [eV]", DEF_W, DEF_H);
+	hist_dE->Draw();
+	TCanvas *c_8 = new TCanvas ("e energy loss in resonance", "e energy loss in resonance", DEF_W, DEF_H);
+	hist_Eloss->Draw();
+	TCanvas *c_9 = new TCanvas ("e delta E abs in resonance [eV]", "e delta E abs in resonance [eV]", DEF_W, DEF_H);
+	hist_dE_abs->Draw();
 	
 	TCanvas *c_12 = new TCanvas ("c Ec(t)", "c Ec(t)", DEF_W, DEF_H);
 	TGraph *gr_Ec_t = new TGraph ();
 	TCanvas *c_13 = new TCanvas ("c xf(t)", "c xf(t)", DEF_W, DEF_H);
 	TGraph *gr_x_t = new TGraph ();
 	
+	std::cout<<"Drift distance: "<<DRIFT_DISTANCE<<std::endl;
 	std::cout<<"Num of elastic: "<<num_of_elastic<<std::endl;
 	std::cout<<"Num of resonance: "<<num_of_resonance<<std::endl;
 	std::cout<<"Num of overflow: "<<num_of_overflow<<std::endl;
 	std::cout<<"Num of ionizations: "<<num_of_ions<<std::endl;
 	std::cout<<"Num of excitations: "<<num_of_excitations<<std::endl;
 	std::cout<<"Num of electrons: "<<num_of_electrons<<std::endl;
+	
 }
 
 //uses canvases and graphs defined above
 void Plot_e (int n_of_e) {
-    std::cout<<"Plot_e("<<n_of_e<<")"<<std::endl;
+    //std::cout<<"Plot_e("<<n_of_e<<")"<<std::endl;
 	
     double En_start;
     double En_collision;

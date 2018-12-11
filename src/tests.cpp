@@ -89,7 +89,7 @@ void test_phase_shift_fit (void)
 {
 	std::string fname_McEachran = "tests/phase_shifts_McEachran_";
 	std::string fname_MERT = "tests/phase_shifts_MERT.txt";
-	std::string fname_phase_fit = "tests/phase_shifts_fit.txt";
+	std::string fname_phase_fit = "tests/phase_shifts_fit_exp.txt";
 
 	std::ofstream str;
 	for (unsigned int l=0; l<ArExper.phase_shifts_.size();++l) {
@@ -101,36 +101,50 @@ void test_phase_shift_fit (void)
 		str.close();
 	}
 
-	str.open(fname_phase_fit, std::ios_base::trunc);
-	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
-	for (int i=0; i<600; ++i) {
-		double x = THRESH_E_PHASES_-0.2 + i*(12-THRESH_E_PHASES_+0.2)/599;
-		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
-		str<<x<<"\t";
-		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l)
-			str<<ArExper.phase_shifts_[l](k,k)<<"\t";
-		str<<std::endl;
-	}
-	str.close();
-
-	str.open(fname_MERT, std::ios_base::trunc);
-	str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
-	for (int i=0; i<100; ++i) {
-		double x = 1e-2 + i*(THRESH_E_PHASES_-1e-2)/99;
-		double k = sqrt(x)*a_h_bar_2e_m_e_SIconst;
-		str<<x<<"\t";
-		for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
-			long double tan, sin, cos;
-			argon_phase_values_MERT5(k, l, tan, sin, cos);
-			tan = std::atan(tan);
-			str<<tan<<"\t";
+	int err;
+	double E, k;
+	{
+		str.open(fname_phase_fit, std::ios_base::trunc);
+		str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
+		EnergyScanner EnRange(EnergyScanner::PlotDiffXS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			k = sqrt(E)*a_h_bar_2e_m_e_SIconst;
+			str<<E<<"\t";
+			for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l)
+				str<<ArExper.phase_shifts_[l](k,k)<<"\t";
+			str<<std::endl;
 		}
-		str<<std::endl;
+		str.close();
 	}
-	str.close();
+
+	{
+		str.open(fname_MERT, std::ios_base::trunc);
+		str<<"E[eV]\tphase shifts 0, 1, ... "<<std::endl;
+		EnergyScanner EnRange(EnergyScanner::PlotDiffXS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			if (E>THRESH_E_XS_)
+				break;
+			k = sqrt(E)*a_h_bar_2e_m_e_SIconst;
+			str<<E<<"\t";
+			for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
+				long double tan, sin, cos;
+				argon_phase_values_MERT5(k, l, tan, sin, cos);
+				tan = std::atan(tan);
+				str<<tan<<"\t";
+			}
+			str<<std::endl;
+		}
+		str.close();
+	}
 
 	for (std::size_t l = 0, l_end = ArExper.phase_shifts_.size(); l!=l_end; ++l) {
-		std::string name = std::string("tests/test_phase_shift_fit_") + std::to_string(l) + ".sc";
+		std::string name = std::string("tests/test_phase_shift_") + std::to_string(l) + ".sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"set logscale x"<<std::endl;
 		str<<"plot '"<<fname_McEachran + std::to_string(l) + ".txt" <<"' u 1:2 title 'McEachran_"<<l<<"'"<<std::endl;
@@ -405,6 +419,17 @@ void test_colored_interval (void)
 	range2 = range2 + ran3 + ran5 + ran6;
 	range2.Print(std::cout);
 	std::cout<<"========================"<<std::endl;
+	std::cout<<"Scan over following intervals [from; step; to]:"<<std::endl;
+	std::cout<<"[0; 0.5; 1] + [1; 1; 3] + [6; 0.5; 7]"<<std::endl;
+	ColoredInterval ran8 (0,1, 0.5);
+	ColoredInterval ran9 (1,3, 1);
+	ColoredInterval ran10 (6,7, 0.5);
+	range1 = ran8 + ran9 +ran10;
+	for (int i=0, end_=range1.NumOfIndices(); i!=end_; ++i) {
+		std::cout<<range1.Value(i)<<"; ";
+	}
+	std::cout<<std::endl;
+	std::cout<<"========================"<<std::endl;
 }
 
 void test_factor_helper (void)
@@ -513,8 +538,8 @@ void test_factor_helper (void)
 
 void test_diff_tot_cross (void)
 {
-	std::string fname_diff = "tests/diff_cross_10eV.txt";
-	std::string fname_tot = "tests/diff_cross_total_elastic.txt";
+	std::string fname_diff = "tests/diff_cross_elastic_10eV.txt";
+	std::string fname_tot = "tests/total_elastic_from_diff.txt";
 	std::ofstream str;
 	str.open(fname_diff, std::ios_base::trunc);
 	str<<"theta[deg]\tXS[1e-20m^2]"<<std::endl;
@@ -526,8 +551,8 @@ void test_diff_tot_cross (void)
 
 	str.open(fname_tot, std::ios_base::trunc);
 	str<<"E[eV]\tXS from diff [1e-20m^2]\tXS tot [1e-20m^2]\tXS tot PS"<<std::endl;
-	EnergyScanner eScan;
-	int err = 0;
+	int err;
+	EnergyScanner eScan(EnergyScanner::PlotDiffXS);
 	while (true) {
 		double E = eScan.Next(err);
 		if (0!=err)
@@ -539,13 +564,13 @@ void test_diff_tot_cross (void)
 	}
 	str.close();
 
-	std::string name = "tests/test_diff_XS.sc";
+	std::string name = "tests/test_diff_XS_elastic.sc";
 	str.open(name, std::ios_base::trunc);
 	str<<"plot \""<<fname_diff<<"\" u 1:2 title \"Diff. XS\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
-	name = "tests/test_diff_XS_total.sc";
+	name = "tests/test_diff_XS_elastic_by_total.sc";
 	str.open(name, std::ios_base::trunc);
 	str<<"set logscale x"<<std::endl;
 	str<<"set logscale y"<<std::endl;
@@ -562,21 +587,23 @@ void test_backward_scatter_prob (void)
 {
 	std::string fname = "tests/backward_scattering_prob.txt";
 	std::ofstream str;
-	str.open(fname, std::ios_base::trunc);
-	str<<"E[eV]\tW_backward"<<std::endl;
-	EnergyScanner eScan;
-	int err = 0;
-	while (true) {
-		double E = eScan.Next(err);
-		if (0!=err)
-			break;
-		str<<E<<"\t"<<argon_back_scatter_prob(E)<<std::endl;
+	int err;
+	{
+		str.open(fname, std::ios_base::trunc);
+		str<<"E[eV]\tW_backward"<<std::endl;
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
+		while (true) {
+			double E = eScan.Next(err);
+			if (0!=err)
+				break;
+			str<<E<<"\t"<<argon_back_scatter_prob(E)<<std::endl;
+		}
+		str.close();
 	}
-	str.close();
 	std::string name = "tests/test_backward_scatter.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"tests/backward_scattering_prob.txt\" u 1:2 title \"W_backward\""<<std::endl;
+	str<<"plot \""<<fname<<"\" u 1:2 title \"W_backward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -584,23 +611,25 @@ void test_backward_scatter_prob (void)
 
 void test_TM_forward (void)
 {
-	std::string fname = "tests/forward_TM.txt";
+	std::string fname = "tests/TM_forward.txt";
 	std::ofstream str;
-	str.open(fname, std::ios_base::trunc);
-	str<<"E[eV]\tTM_forward"<<std::endl;
-	EnergyScanner eScan;
-	int err = 0;
-	while (true) {
-		double E = eScan.Next(err);
-		if (0!=err)
-			break;
-		str<<E<<"\t"<<argon_TM_forward(E)<<std::endl;
+	int err;
+	{
+		str.open(fname, std::ios_base::trunc);
+		str<<"E[eV]\tTM_forward"<<std::endl;
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
+		while (true) {
+			double E = eScan.Next(err);
+			if (0!=err)
+				break;
+			str<<E<<"\t"<<argon_TM_forward(E)<<std::endl;
+		}
+		str.close();
 	}
-	str.close();
-	std::string name = "tests/test_forward_TM.sc";
+	std::string name = "tests/test_TM_forward.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"tests/forward_TM.txt\" u 1:2 title \"TM_forward\""<<std::endl;
+	str<<"plot \""<<fname<<"\" u 1:2 title \"TM_forward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -608,23 +637,25 @@ void test_TM_forward (void)
 
 void test_TM_backward (void)
 {
-	std::string fname = "tests/backward_TM.txt";
+	std::string fname = "tests/TM_backward.txt";
 	std::ofstream str;
-	str.open(fname, std::ios_base::trunc);
-	str<<"E[eV]\tTM_backward"<<std::endl;
-	EnergyScanner eScan;
-	int err = 0;
-	while (true) {
-		double E = eScan.Next(err);
-		if (0!=err)
-			break;
-		str<<E<<"\t"<<argon_TM_backward(E)<<std::endl;
+	int err;
+	{
+		str.open(fname, std::ios_base::trunc);
+		str<<"E[eV]\tTM_backward"<<std::endl;
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
+		while (true) {
+			double E = eScan.Next(err);
+			if (0!=err)
+				break;
+			str<<E<<"\t"<<argon_TM_backward(E)<<std::endl;
+		}
+		str.close();
 	}
-	str.close();
-	std::string name = "tests/test_backward_TM.sc";
+	std::string name = "tests/test_TM_backward.sc";
 	str.open(name, std::ios_base::trunc);
 	//str<<"set logscale x"<<std::endl;
-	str<<"plot \"tests/backward_TM.txt\" u 1:2 title \"TM_backward\""<<std::endl;
+	str<<"plot \""<<fname<<"\" u 1:2 title \"TM_backward\""<<std::endl;
 	str<<"pause -1"<<std::endl;
 	str.close();
 	INVOKE_GNUPLOT(name);
@@ -632,49 +663,54 @@ void test_TM_backward (void)
 
 void test_total_cross_all (void)
 {
-	std::ofstream str;
-	EnergyScanner eScan, eScanRes(1), eScanExt(2);
+	std::ofstream str, str1;
 
-	std::string fname_XS = "tests/total_elastic_XS.txt";
+	std::string fname_XS = "tests/total_elastic_and_resonances_XS.txt";
 	std::string fname_XS_ext = "tests/excitation_XS.txt";
 	std::string fname_XS_ext2 = "tests/excitation_XS2.txt";
-	str.open(fname_XS, std::ios_base::trunc);
-	str<<std::scientific;
-	str<<"E[eV]\tXS elastic+Feshbach resonances total [1e-20 m^2]"<<std::endl;
+	int err;
 	{
-		int err1 = 0, err2 = 0;
-		double E1 = eScan.Next(err1);
-		double E2 = eScanRes.Next(err2);
-		if ((0==err1)&&(0==err2)) {
-			while ((E1<E2)&&(0==err1)) {
-				str<<E1<<"\t"<<ArTables.XS_elastic(E1)+ArTables.XS_resonance(E1)<<std::endl;
-				E1 = eScan.Next(err1);
+		EnergyScanner EnRange(EnergyScanner::PlotAllXS);
+		str.open(fname_XS, std::ios_base::trunc);
+		str<<std::scientific;
+		str<<"E[eV]\tXS elastic+Feshbach resonances total [1e-20 m^2]"<<std::endl;
+		str1.open(fname_XS_ext, std::ios_base::trunc);
+		str1<<std::scientific;
+		str1<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
+		while (true) {
+			double E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			str<<E<<"\t"<<ArTables.XS_elastic(E)+ArTables.XS_resonance_3o2(E)+ArTables.XS_resonance_1o2(E)<<std::endl;
+			double XS_S=0, XS_P=0, XS_EXT=0, XS_ION=0;
+			for (int j =0, end_ = ArExper.ionizations.size(); j!=end_; ++j) {
+				XS_ION+=ArExper.ionizations[j](E);
 			}
-			while (err2==0) {
-				str<<E2<<"\t"<<ArTables.XS_elastic(E2)+ArTables.XS_resonance(E2)<<std::endl;
-				E2 = eScanRes.Next(err2);
+			for (int j =0, end_ = ArExper.excitations.size(); j!=end_; ++j) {
+				std::string name = ArExper.excitations[j].get_name();
+				if (name.find("S")!=std::string::npos)
+					XS_S+=ArExper.excitations[j](E);
+				if (name.find("P")!=std::string::npos)
+					XS_P+=ArExper.excitations[j](E);
+				XS_EXT+=ArExper.excitations[j](E);
 			}
-			while (E2>E1) {
-				E1 = eScan.Next(err1);
-				if (0!=err1)
-					break;
-			}
-			while (0==err1) {
-				str<<E1<<"\t"<<ArTables.XS_elastic(E1)+ArTables.XS_resonance(E1)<<std::endl;
-				E1 = eScan.Next(err1);
-			}
+			XS_S = std::max(1e-4, XS_S); //for logscale
+			XS_P = std::max(1e-4, XS_P);
+			XS_EXT = std::max(1e-4, XS_EXT);
+			XS_ION = std::max(1e-4, XS_ION);
+			str1<<E<<"\t"<<XS_S<<"\t"<<XS_P<<"\t"<<XS_EXT<<"\t"<<XS_ION<<std::endl;
 		}
+		str.close();
+		str1.close();
 	}
-	eScan.Reset();
-	eScanRes.Reset();
-	str.close();
 
-	int err = 0;
-	str.open(fname_XS_ext, std::ios_base::trunc);
-	str<<std::scientific;
-	str<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
-	while (true) {
-			double E = eScanExt.Next(err);
+	{
+		EnergyScanner EnRange(EnergyScanner::PlotInelasticXS);
+		str.open(fname_XS_ext2, std::ios_base::trunc);
+		str<<std::scientific;
+		str<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
+		while (true) {
+			double E = EnRange.Next(err);
 			if (0!=err)
 				break;
 			double XS_S=0, XS_P=0, XS_EXT=0, XS_ION=0;
@@ -695,32 +731,8 @@ void test_total_cross_all (void)
 			XS_ION = std::max(1e-4, XS_ION);
 			str<<E<<"\t"<<XS_S<<"\t"<<XS_P<<"\t"<<XS_EXT<<"\t"<<XS_ION<<std::endl;
 		}
-	str.close();
-
-	str.open(fname_XS_ext2, std::ios_base::trunc);
-	str<<std::scientific;
-	str<<"E[eV]\tXS S ext.[1e-20 m^2]\tXS P ext.\tXS sum ext.\tXS ion."<<std::endl;
-	for (int i=0;i<5001;++i) {
-		double E = 10.5+ i * (1000-10.5)/5000;
-		double XS_S=0, XS_P=0, XS_EXT=0, XS_ION=0;
-		for (int j =0, end_ = ArExper.ionizations.size(); j!=end_; ++j) {
-			XS_ION+=ArExper.ionizations[j](E);
-		}
-		for (int j =0, end_ = ArExper.excitations.size(); j!=end_; ++j) {
-			std::string name = ArExper.excitations[j].get_name();
-			if (name.find("S")!=std::string::npos)
-				XS_S+=ArExper.excitations[j](E);
-			if (name.find("P")!=std::string::npos)
-				XS_P+=ArExper.excitations[j](E);
-			XS_EXT+=ArExper.excitations[j](E);
-		}
-		XS_S = std::max(1e-4, XS_S); //for logscale
-		XS_P = std::max(1e-4, XS_P);
-		XS_EXT = std::max(1e-4, XS_EXT);
-		XS_ION = std::max(1e-4, XS_ION);
-		str<<E<<"\t"<<XS_S<<"\t"<<XS_P<<"\t"<<XS_EXT<<"\t"<<XS_ION<<std::endl;
+		str.close();
 	}
-	str.close();
 
 	std::string name = "tests/test_XS_all.sc";
 	str.open(name, std::ios_base::trunc);
@@ -750,22 +762,22 @@ void test_total_cross_all (void)
 }
 
 //Dependent on previous tests.
-//This function only tests that interpolation/fit of ArDataTables works properly.
+//This function tests that interpolation/fit of ArDataTables works properly.
 void test_data_table (void)
 {
+	int err;
 	std::ofstream str;
-	EnergyScanner eScan;
 	{
+		EnergyScanner eScan(EnergyScanner::PlotElasticResXS);
 		std::string fname_XS = "tests/table_total_elastic_XS.txt";
-		std::string fname_XS1 = "tests/diff_cross_total_elastic.txt";
+		std::string fname_XS1 = "tests/total_elastic_from_diff.txt";
 		str.open(fname_XS, std::ios_base::trunc);
-		str<<"E[eV]\tXS elastic total [1e-20 m^2]"<<std::endl;
-		int err = 0;
+		str<<"E[eV]\tXS elastic and resonance total [1e-20 m^2]"<<std::endl;
 		while (true) {
-			double E = 0.95*eScan.Next(err);
+			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<ArTables.XS_elastic(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.XS_elastic(E) + ArTables.XS_resonance_3o2(E)+ ArTables.XS_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
 		std::string name = "tests/test_table_XS.sc";
@@ -779,85 +791,88 @@ void test_data_table (void)
 	}
 
 	{
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
 		std::string fname_back_prob = "tests/table_back_prob.txt";
 		std::string fname_back_prob1 = "tests/backward_scattering_prob.txt";
 		str.open(fname_back_prob, std::ios_base::trunc);
-		str<<"E[eV]\tP elastic\tP resonance"<<std::endl;
-		int err = 0;
+		str<<"E[eV]\tP elastic\tP resonance 3/2\tP resonance 1/2"<<std::endl;
 		while (true) {
-			double E = 0.95*eScan.Next(err);
+			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<ArTables.P_backward_elastic(E)<<"\t"<<ArTables.P_backward_resonance(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.P_backward_elastic(E)<<"\t"<<ArTables.P_backward_resonance_3o2(E)<<"\t"<<ArTables.P_backward_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
 		std::string name = "tests/test_table_backward_prob.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_back_prob1<<"\" u 1:2 title \"P from function\""<<std::endl;
 		str<<"replot \""<<fname_back_prob<<"\" u 1:2 w lines title \"P from table elastic\""<<std::endl;
-		str<<"replot \""<<fname_back_prob<<"\" u 1:3 title \"P from table resonance\""<<std::endl;
+		str<<"replot \""<<fname_back_prob<<"\" u 1:3 title \"P from table resonance 3/2\""<<std::endl;
+		str<<"replot \""<<fname_back_prob<<"\" u 1:4 title \"P from table resonance 1/2\""<<std::endl;
 		str<<"pause -1"<<std::endl;
 		str.close();
 		INVOKE_GNUPLOT(name);
 	}
 
 	{
-		std::string fname_TM_back = "tests/table_backward_TM.txt";
-		std::string fname_TM_back1 = "tests/backward_TM.txt";
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
+		std::string fname_TM_back = "tests/table_TM_backward.txt";
+		std::string fname_TM_back1 = "tests/TM_backward.txt";
 		str.open(fname_TM_back, std::ios_base::trunc);
-		str<<"E[eV]\tTM backward elastic\tTM backward resonance"<<std::endl;
-		int err = 0;
+		str<<"E[eV]\tTM backward elastic\tTM backward resonance 3/2\tTM backward resonance 1/2"<<std::endl;
 		while (true) {
-			double E = 0.95*eScan.Next(err);
+			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<ArTables.TM_backward_elastic(E)<<"\t"<<ArTables.TM_backward_resonance(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.TM_backward_elastic(E)<<"\t"<<ArTables.TM_backward_resonance_3o2(E)<<"\t"<<ArTables.TM_backward_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "tests/test_table_backward_TM.sc";
+		std::string name = "tests/test_table_TM_backward.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_TM_back1<<"\" u 1:2 title \"TM backward from function\""<<std::endl;
 		str<<"replot \""<<fname_TM_back<<"\" u 1:2 w lines title \"TM backward from table elastic\""<<std::endl;
-		str<<"replot \""<<fname_TM_back<<"\" u 1:3 title \"TM backward from table resonance\""<<std::endl;
+		str<<"replot \""<<fname_TM_back<<"\" u 1:3 title \"TM backward from table resonance 3/2\""<<std::endl;
+		str<<"replot \""<<fname_TM_back<<"\" u 1:4 title \"TM backward from table resonance 1/2\""<<std::endl;
 		str<<"pause -1"<<std::endl;
 		str.close();
 		INVOKE_GNUPLOT(name);
 	}
 
 	{
-		std::string fname_TM_for = "tests/table_forward_TM.txt";
-		std::string fname_TM_for1 = "tests/forward_TM.txt";
+		EnergyScanner eScan(EnergyScanner::PlotDiffXS);
+		std::string fname_TM_for = "tests/table_TM_forward.txt";
+		std::string fname_TM_for1 = "tests/TM_forward.txt";
 		str.open(fname_TM_for, std::ios_base::trunc);
-		str<<"E[eV]\tTM forward elastic\tTM forward resonance"<<std::endl;
-		int err = 0;
+		str<<"E[eV]\tTM forward elastic\tTM forward resonance 3/2\tTM forward resonance 1/2"<<std::endl;
 		while (true) {
-			double E = 0.95*eScan.Next(err);
+			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<ArTables.TM_forward_elastic(E)<<"\t"<<ArTables.TM_forward_resonance(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.TM_forward_elastic(E)<<"\t"<<ArTables.TM_forward_resonance_3o2(E)<<"\t"<<ArTables.TM_forward_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
-		std::string name = "tests/test_table_forward_TM.sc";
+		std::string name = "tests/test_table_TM_forward.sc";
 		str.open(name, std::ios_base::trunc);
 		str<<"plot \""<<fname_TM_for1<<"\" u 1:2 title \"TM forward from function\""<<std::endl;
 		str<<"replot \""<<fname_TM_for<<"\" u 1:2 w lines title \"TM forward from table elastic\""<<std::endl;
-		str<<"replot \""<<fname_TM_for<<"\" u 1:3 title \"TM forward from table resonance\""<<std::endl;
+		str<<"replot \""<<fname_TM_for<<"\" u 1:3 title \"TM forward from table resonance 3/2\""<<std::endl;
+		str<<"replot \""<<fname_TM_for<<"\" u 1:4 title \"TM forward from table resonance 1/2\""<<std::endl;
 		str<<"pause -1"<<std::endl;
 		str.close();
 		INVOKE_GNUPLOT(name);
 	}
-	EnergyScanner eScanRes(1);
+
 	{
+		EnergyScanner eScan(EnergyScanner::PlotResonances);
 		std::string fname_XS = "tests/table_resonance_XS.txt";
 		std::string fname_XS1 = "tests/resonance_XS.txt";
 		str.open(fname_XS, std::ios_base::trunc);
-		str<<"E[eV]\tXS resonance total [1e-20 m^2]"<<std::endl;
-		int err = 0;
+		str<<"E[eV]\tXS resonances + elastic total [1e-20 m^2]"<<std::endl;
 		while (true) {
-			double E = 0.97*eScanRes.Next(err);
+			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<ArTables.XS_resonance(E)<<std::endl;
+			str<<E<<"\t"<<ArTables.XS_elastic(E)+ArTables.XS_resonance_3o2(E)+ArTables.XS_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
 		std::string name = "tests/test_table_resonance_XS.sc";
@@ -868,6 +883,7 @@ void test_data_table (void)
 		str.close();
 		INVOKE_GNUPLOT(name);
 	}
+
 	{
 		std::string fname_XS = "data_derived/total_cross_section_integral.dat";
 		std::string name = "tests/test_table_XS_integral.sc";
@@ -882,17 +898,17 @@ void test_data_table (void)
 void test_resonance_cross (void)
 {
 	std::ofstream str;
-	EnergyScanner eScan(1);
 	{
+		EnergyScanner eScan(EnergyScanner::PlotResonances);
 		std::string fname_XS = "tests/resonance_XS.txt";
 		str.open(fname_XS, std::ios_base::trunc);
 		str<<"E[eV]\tXS resonance total [1e-20 m^2]"<<std::endl;
-		int err = 0;
+		int err;
 		while (true) {
 			double E = eScan.Next(err);
 			if (0!=err)
 				break;
-			str<<E<<"\t"<<argon_cross_resonance(E)<<std::endl;
+			str<<E<<"\t"<<argon_cross_elastic(E) + argon_cross_resonance_3o2(E)+argon_cross_resonance_1o2(E)<<std::endl;
 		}
 		str.close();
 		std::string name = "tests/test_resonance_XS.sc";
@@ -930,7 +946,7 @@ void test_all (void)
 	std::cout<<"Testing integrals of legendre polynomials:"<<std::endl;
 	test_legendre_intregral ();
 	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;
-
+	*//*
 	std::cout<<"Testing differential cross section:"<<std::endl;
 	test_diff_tot_cross ();
 	std::cout<<"==============================================="<<std::endl<<std::endl<<std::endl;

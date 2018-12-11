@@ -1,20 +1,25 @@
  {
-	
-	TH1D* histE_3_0_1 = new TH1D ("EnergyC 3.0 Td [eV] Ld=1e-6","EnergyC 3.0 Td [eV] Ld=1e-6",300,0, 14);
-	TH1D* histE_3_0_2 = new TH1D ("EnergyC 3.0 Td [eV] Ld=1e-5","EnergyC 3.0 Td [eV] Ld=1e-5",300,0, 14);
-	TH1D* histE_3_0_3 = new TH1D ("EnergyC 3.0 Td [eV] Ld=1e-4","EnergyC 3.0 Td [eV] Ld=1e-4",300,0, 14);
-	TH1D* histE_3_0_4 = new TH1D ("EnergyC 3.0 Td [eV] Ld=1e-3","EnergyC 3.0 Td [eV] Ld=1e-3",300,0, 14);
-	histE_3_0_1->SetStats(false);
-	histE_3_0_2->SetStats(false);
-	histE_3_0_3->SetStats(false);
-	histE_3_0_4->SetStats(false);
+	double EN_MIN_=0;
+	double EN_MAX_=14;
+	int NN = 300;
+	TH1D* histE_0 = new TH1D ("EnergyC 7.0 Td [eV] normal res.","EnergyC 7.0 Td [eV] normal res.",NN,EN_MIN_, EN_MAX_);
+	TH1D* histE_1 = new TH1D ("EnergyC 7.0 Td [eV] W=3e-2 eV","EnergyC 7.0 Td [eV] W=3e-2 eV",NN,EN_MIN_, EN_MAX_);
+	TH1D* histE_2 = new TH1D ("EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=50x","EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=50x",NN,EN_MIN_, EN_MAX_);
+	TH1D* histE_3 = new TH1D ("EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=100x","EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=100x",NN,EN_MIN_, EN_MAX_);
+	TH1D* histE_4 = new TH1D ("EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=150x","EnergyC 7.0 Td [eV] W=3e-2 eV, Loss=150x",NN,EN_MIN_, EN_MAX_);
+	histE_0->SetStats(false);
+	histE_1->SetStats(false);
+	histE_2->SetStats(false);
+	histE_3->SetStats(false);
+	histE_4->SetStats(false);
 	
 	int DEF_W = 900, DEF_H = 700;
-	std::vector<double> DRIFT_DISTANCE = {1e-6, 1e-5, 1e-4, 1e-3};
-	std::string fname_3_0_1("Output/v8/eData_3Td");
-	std::string fname_3_0_2("Output/v7/eData_3Td");
-	std::string fname_3_0_3("Output/v9/eData_3Td");
-	std::string fname_3_0_4("Output/v12/eData_3Td");
+	std::vector<double> DRIFT_DISTANCE = {3e-3, 3e-3, 3e-3, 3e-3};
+	std::string fname_0("Output/v13.1/eData_7.0Td");
+	std::string fname_1("Output/v15.0/eData_7.0Td");
+	std::string fname_2("Output/v15.4/eData_7.0Td");
+	std::string fname_3("Output/v15.3/eData_7.0Td");
+	std::string fname_4("Output/v15.5/eData_7.0Td");
 	
 	double En_start;
 	double En_collision;
@@ -30,29 +35,34 @@
 
 	
 	double max_val = 0;
-	for (int nhist = 0; nhist<4;++nhist) {
+	for (int nhist = 0; nhist<5;++nhist) {
 	    TH1D* histE = NULL;
 	    std::string fname;
 	    switch (nhist) 
 	    {
 		case 0: {
-		    histE = histE_3_0_1;
-		    fname = fname_3_0_1;
+		    histE = histE_0;
+		    fname = fname_0;
 		    break;
 		}
 		case 1: {
-		    histE = histE_3_0_2;
-		    fname = fname_3_0_2;
+		    histE = histE_1;
+		    fname = fname_1;
 		    break;
 		}
 		case 2: {
-		    histE = histE_3_0_3;
-		    fname = fname_3_0_3;
+		    histE = histE_2;
+		    fname = fname_2;
 		    break;
 		}
 		case 3: {
-		    histE = histE_3_0_4;
-		    fname = fname_3_0_4;
+		    histE = histE_3;
+		    fname = fname_3;
+		    break;
+		}
+		case 4: {
+		    histE = histE_4;
+		    fname = fname_4;
 		    break;
 		}
 	    }
@@ -108,42 +118,51 @@
 	    }
 	    //normalization of spectrum; like in Buzulutzkov paper
 	    double Norm =0;
-	    for (int bin = 1, bin_end = histE->GetNbinsX(); bin!=bin_end; ++bin) {
+	    for (int bin = 1, bin_end = histE->GetNbinsX()+1; bin!=bin_end; ++bin) {
 		Norm+=histE->GetBinContent(bin)/**pow(histE->GetBinCenter(bin),0.5)*/*histE->GetBinWidth(bin);
 	    }
-	    for (int bin = 1, bin_end = histE->GetNbinsX(); bin!=bin_end; ++bin) {
+	    for (int bin = 1, bin_end = histE->GetNbinsX()+1; bin!=bin_end; ++bin) {
 		histE->SetBinContent(bin, histE->GetBinContent(bin)/(Norm));
 		max_val = std::max(max_val, (double) histE->GetBinContent(bin));
 	    }
 	}
 	max_val*=1.1;
-	TCanvas *c_ = new TCanvas ("Collision E spectra_", "Collision E spectra_", DEF_W, DEF_H);
+	gStyle->SetGridStyle(3);
+	gStyle->SetGridColor(14);
+	gStyle->SetGridWidth(1);
 	gStyle->SetOptStat("");
+	TCanvas *c_ = new TCanvas ("Collision E spectra_", "Collision E spectra_", DEF_W, DEF_H);
+	c_->SetGrid();
+	c_->SetTicks();
 	TLegend *legend = new TLegend( 0.55, 0.65, 0.9, 0.9);
 	//legend->SetHeader("");
 	legend->SetMargin(0.25);
-	TH2F* frame = new TH2F( "frame", "Collision E spectra", 500, 0, 14, 500, 0, max_val);
+	TH2F* frame = new TH2F( "frame", "Collision E spectra", 500, EN_MIN_, EN_MAX_, 500, 0, max_val);
 	frame->GetXaxis()->SetTitle("Ee [eV]");
 	frame->GetYaxis()->SetTitle("");
 	frame->Draw();
 	
-	histE_3_0_1->SetLineWidth(3);
-	histE_3_0_1->SetLineColor(2);
-	histE_3_0_1->Draw("csame");
-	histE_3_0_2->SetLineWidth(3);
-	histE_3_0_2->SetLineColor(12);
-	histE_3_0_2->Draw("csame");
-	histE_3_0_3->SetLineWidth(3);
-	histE_3_0_3->SetLineColor(4);
-	histE_3_0_3->Draw("csame");
-	histE_3_0_4->SetLineWidth(3);
-	histE_3_0_4->SetLineColor(3);
-	histE_3_0_4->Draw("csame");
+	histE_0->SetLineWidth(2);
+	histE_0->SetLineColor(2);
+	histE_0->Draw("csame");
+	histE_1->SetLineWidth(2);
+	histE_1->SetLineColor(12);
+	histE_1->Draw("csame");
+	histE_2->SetLineWidth(2);
+	histE_2->SetLineColor(4);
+	histE_2->Draw("csame");
+	histE_3->SetLineWidth(2);
+	histE_3->SetLineColor(3);
+	histE_3->Draw("csame");
+	histE_4->SetLineWidth(2);
+	histE_4->SetLineColor(6);
+	histE_4->Draw("csame");
 	
-	legend->AddEntry(histE_3_0_1, (std::string("3.0 Td, Ld=1e-6, <Ec>=")+std::to_string(histE_3_0_1->GetMean())).c_str(), "l");
-	legend->AddEntry(histE_3_0_2, (std::string("3.0 Td, Ld=1e-5, <Ec>=")+std::to_string(histE_3_0_2->GetMean())).c_str(), "l");
-	legend->AddEntry(histE_3_0_3, (std::string("3.0 Td, Ld=1e-4, <Ec>=")+std::to_string(histE_3_0_3->GetMean())).c_str(), "l");
-	legend->AddEntry(histE_3_0_4, (std::string("3.0 Td, Ld=1e-3, <Ec>=")+std::to_string(histE_3_0_4->GetMean())).c_str(), "l");
+	legend->AddEntry(histE_0, (std::string("7.0 Td, normal resonance")).c_str(), "l");
+	legend->AddEntry(histE_1, (std::string("7.0 Td, W=3e-2 eV")).c_str(), "l");
+	legend->AddEntry(histE_2, (std::string("7.0 Td, W=3e-2 eV, Loss=50x")).c_str(), "l");
+	legend->AddEntry(histE_3, (std::string("7.0 Td, W=3e-2 eV, Loss=100x")).c_str(), "l");
+	legend->AddEntry(histE_4, (std::string("7.0 Td, W=3e-2 eV, Loss=150x")).c_str(), "l");
 	
 	frame->Draw("sameaxis");
 	legend->Draw("same");

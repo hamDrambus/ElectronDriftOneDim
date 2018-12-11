@@ -18,11 +18,15 @@
 
 class EnergyScanner
 {
+public:
+	enum ScanType: short {ElasticXS, Resonance_3o2_XS, Resonance_1o2_XS, ResonancesXS,
+			Resonance_3o2_DiffXS, Resonance_1o2_DiffXS, ResonancesDiffXS,
+			DiffXS,	InelasticXS, ElasticResXS, XSIntegral, PlotElastic,
+			PlotResonance_3o2, PlotResonance_1o2, PlotResonances,
+			PlotDiffXS, PlotInelasticXS, PlotElasticResXS, PlotAllXS};
 protected:
 	unsigned int i;
-	enum ScanType: short {ElasticXS = 0, ResonanceXS = 1, ResonanceDiffXS = 2,
-		DiffXS = 3,	InelasticXS = 4, ElasticResXS = 5, XSIntegral = 6, PlotElastic = 7,
-		PlotResonance = 8, PlotDiff = 9, PlotInelastic = 10, PlotAllXS = 11} type_;
+	ScanType type_;
 	ColoredRange energy_range_;
 public:
 	EnergyScanner(ScanType type);
@@ -69,23 +73,31 @@ class ArDataTables //loads data from default files if presented. If not then val
 {
 protected:
 	std::string total_cross_elastic_fname;
-	std::string total_cross_resonance_fname;
+	std::string total_cross_resonance_3o2_fname;
+	std::string total_cross_resonance_1o2_fname;
 	std::string back_scatter_elastic_prob_fname;
-	std::string back_scatter_resonance_prob_fname;
+	std::string back_scatter_resonance_3o2_prob_fname;
+	std::string back_scatter_resonance_1o2_prob_fname;
 	std::string TM_backward_elastic_fname;
-	std::string TM_backward_resonance_fname;
+	std::string TM_backward_resonance_3o2_fname;
+	std::string TM_backward_resonance_1o2_fname;
 	std::string TM_forward_elastic_fname;
-	std::string TM_forward_resonance_fname;
+	std::string TM_forward_resonance_3o2_fname;
+	std::string TM_forward_resonance_1o2_fname;
 	std::string total_cross_integral_fname;
 	//atm backward scatter probability and TM's for resonance are taken the same as elastic values
 	DataVector total_cross_elastic_;
-	DataVector total_cross_resonance_;
+	DataVector total_cross_resonance_3o2_;
+	DataVector total_cross_resonance_1o2_;
 	DataVector back_scatter_elastic_prob_;
-	DataVector back_scatter_resonance_prob_;
+	DataVector back_scatter_resonance_3o2_prob_;
+	DataVector back_scatter_resonance_1o2_prob_;
 	DataVector TM_backward_elastic_;
-	DataVector TM_backward_resonance_;
+	DataVector TM_backward_resonance_3o2_;
+	DataVector TM_backward_resonance_1o2_;
 	DataVector TM_forward_elastic_;
-	DataVector TM_forward_resonance_;
+	DataVector TM_forward_resonance_3o2_;
+	DataVector TM_forward_resonance_1o2_;
 	DataVector total_cross_integral_;
 	void read_data (std::ifstream &inp, DataVector &data, long double y_factor = 1);
 public:
@@ -93,13 +105,17 @@ public:
 	long double CrossSection (double E, short type);
 	long double TotalCrossSection (double E);
 	long double XS_elastic(double E);
-	long double XS_resonance(double E);
+	long double XS_resonance_3o2(double E);
+	long double XS_resonance_1o2(double E);
 	double P_backward_elastic(double E);
-	double P_backward_resonance(double E);
+	double P_backward_resonance_3o2(double E);
+	double P_backward_resonance_1o2(double E);
 	double TM_backward_elastic(double E);
-	double TM_backward_resonance(double E);
+	double TM_backward_resonance_3o2(double E);
+	double TM_backward_resonance_1o2(double E);
 	double TM_forward_elastic(double E);
-	double TM_forward_resonance(double E);
+	double TM_forward_resonance_3o2(double E);
+	double TM_forward_resonance_1o2(double E);
 	long double XS_integral(double E);//always from -EN_MAXIMUM_
 	long double XS_integral_find(long double Int, Event &event);
 	//^finds E value corresponding to Int value of integral. Int==XS_integral(returned value)
@@ -122,11 +138,16 @@ long double argon_back_scatter_prob (long double E);
 long double argon_TM_forward (long double E);
 long double argon_TM_backward (long double E);
 
-long double argon_cross_resonance_diff (long double E, long double theta);
-long double argon_cross_resonance (long double E);
-long double argon_back_resonance_prob (long double E);
-long double argon_TM_forward_resonance (long double E);
-long double argon_TM_backward_resonance (long double E);
+long double argon_cross_resonance_3o2_diff (long double E, long double theta);
+long double argon_cross_resonance_1o2_diff (long double E, long double theta);
+long double argon_cross_resonance_3o2 (long double E);
+long double argon_cross_resonance_1o2 (long double E);
+long double argon_back_resonance_3o2_prob (long double E);
+long double argon_back_resonance_1o2_prob (long double E);
+long double argon_TM_forward_resonance_3o2 (long double E);
+long double argon_TM_forward_resonance_1o2 (long double E);
+long double argon_TM_backward_resonance_3o2 (long double E);
+long double argon_TM_backward_resonance_1o2 (long double E);
 
 #endif
 

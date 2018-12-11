@@ -15,9 +15,15 @@ ColoredRange::ColoredRange(const ColoredInterval &inter)
 
 long int ColoredRange::NumOfIndices(void)
 {
-	long int N = 1;
+	long int N = 0;
 	for (int j=0, end_ = arr_.size(); j!=end_; ++j) {
 		N+=std::lround((arr_[j].right_-arr_[j].left_)/arr_[j].color_);
+		if (j==(end_-1)) {
+			N+=1;
+		} else {
+			if (arr_[j+1].left_!=arr_[j].right_)
+				N+=1; //intervals are not adjacent
+		}
 	}
 	return N;
 }
@@ -26,8 +32,19 @@ long double ColoredRange::Value (long int index)
 {
 	long int Nsum = 0, Noff = 0, N = 0;
 	int j=0, end_ = arr_.size();
+	bool closed = false;
 	for (; j!=end_; ++j) {
 		N = std::lround((arr_[j].right_-arr_[j].left_)/arr_[j].color_);
+		if (j==(end_-1)) {
+			N+=1;
+			closed= true;
+		} else {
+			closed = false;
+			if (arr_[j+1].left_!=arr_[j].right_) {
+				N+=1; //intervals are not adjacent
+				closed = true;
+			}
+		}
 		Nsum+=N;
 		if (index<Nsum) {
 			Noff = Nsum - N;
@@ -36,7 +53,7 @@ long double ColoredRange::Value (long int index)
 	}
 	if (j==end_)
 		return DBL_MAX;
-	return arr_[j].left_+(index-Noff)*(arr_[j].right_-arr_[j].left_)/N;
+	return arr_[j].left_+(index-Noff)*(arr_[j].right_-arr_[j].left_)/(N- (closed ?  1 : 0));
 }
 
 void ColoredRange::Print(std::ostream & str)
@@ -97,16 +114,15 @@ ColoredRange operator+ (ColoredRange l, const ColoredInterval& r)
 			}
 			if (!(r.left_<l.arr_[j].right_)) {
 				new_l.push_back(ColoredInterval(l.arr_[j].left_, l.arr_[j].right_, l.arr_[j].color_));
-				continue;
-			}
-			//!(r.right_<l.arr_[j].right_) && (r.left_<l.arr_[j].right_)
-			is_inside_r = true;
-			if (r.left_<l.arr_[j].left_) {
-				new_l.push_back(ColoredInterval(r.left_, l.arr_[j].left_, r.color_));
-				new_l.push_back(ColoredInterval(l.arr_[j].left_, l.arr_[j].right_, std::min(r.color_, l.arr_[j].color_)));
-			} else {
-				new_l.push_back(ColoredInterval(l.arr_[j].left_, r.left_, l.arr_[j].color_));
-				new_l.push_back(ColoredInterval(r.left_, l.arr_[j].right_, std::min(r.color_, l.arr_[j].color_)));
+			} else { //!(r.right_<l.arr_[j].right_) && (r.left_<l.arr_[j].right_)
+				is_inside_r = true;
+				if (r.left_<l.arr_[j].left_) {
+					new_l.push_back(ColoredInterval(r.left_, l.arr_[j].left_, r.color_));
+					new_l.push_back(ColoredInterval(l.arr_[j].left_, l.arr_[j].right_, std::min(r.color_, l.arr_[j].color_)));
+				} else {
+					new_l.push_back(ColoredInterval(l.arr_[j].left_, r.left_, l.arr_[j].color_));
+					new_l.push_back(ColoredInterval(r.left_, l.arr_[j].right_, std::min(r.color_, l.arr_[j].color_)));
+				}
 			}
 		}
 		if ((end_-1) == j) { //special conditions for edges

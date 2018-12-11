@@ -61,6 +61,7 @@ void Manager::SetParameters(double T /*in K*/, double Pressure /*in SI*/, double
 	SetParameters(Pressure / (T*boltzmann_SIconst), E);
 }
 
+//deprecated
 long double Manager::XS_integral(long double from, long double to)
 {
 	double E = from, E_abs;
@@ -90,7 +91,7 @@ long double Manager::XS_integral(long double from, long double to)
 		E += dx;
 		if (E > to)
 			dx = dx - E + to;
-		Int += dx*(ArTables.XS_elastic(E_abs) + ArTables.XS_resonance(E_abs));
+		Int += dx*(ArTables.XS_elastic(E_abs) + ArTables.XS_resonance_3o2(E_abs) + ArTables.XS_resonance_1o2(E_abs));
 	}
 	return Int;
 }
@@ -99,10 +100,11 @@ void Manager::Initialize(Event &event)
 {
 	if (!is_ready_)
 		return;
+	skip_counter_=0;
 	event.CrossSections.resize(ArExper.max_process_ID + 2, 0); //2==Elastic + Resonance
 	event.CrossSectionsSum.resize(ArExper.max_process_ID + 2, 0);
-	//event.En_start = 1 + 6*random_generator_->Uniform();
-	event.En_start = 12;
+	event.En_start = 1 + 3*random_generator_->Uniform();
+	//event.En_start = 3;
 	event.En_collision = 0;
 	event.En_finish = 0;
 	event.pos_start = 0;
@@ -176,7 +178,6 @@ void Manager::DoStepLength(Event &event)
 {
 	if (!is_ready_)
 		return;
-	//event.En_start *= event.velocity_start ? 1 : -1;
 
 	long double L = - log(random_generator_->Uniform());
 	L *= Coefficient_; //Calculated once for fixed parameters;
@@ -192,13 +193,6 @@ void Manager::DoStepLength(Event &event)
 	event.delta_x = (std::fabs(event.En_collision) - std::fabs(event.En_start)) / eField_;
 	event.pos_finish = event.pos_start + event.delta_x;
 
-	/*event.En_start *= event.velocity_start ? 1 : -1;
-	if (event.En_collision < 0) {
-		event.velocity_collision = false;
-		event.En_collision *= -1;
-	} else
-		event.velocity_collision = true;
-	event.velocity_finish = event.velocity_collision;*/
 	event.En_avr = std::fabs(event.En_start) + eField_*vel_0*event.delta_time / 4.0 + e_charge_SIconst*std::pow(eField_*event.delta_time, 2) / (6 * e_mass_SIconst);
 	
 	//!!!ENERGY CUT!!! TODO:remove
@@ -228,8 +222,12 @@ void Manager::DoScattering(Event &event)
 
 	double BackScatterProb;
 	switch (event.process) {
-		case (Event::Resonance): {
-			BackScatterProb = ArTables.P_backward_resonance(std::fabs(event.En_collision));
+		case (Event::Resonance_3o2): {
+			BackScatterProb = ArTables.P_backward_resonance_3o2(std::fabs(event.En_collision));
+			break;
+		}
+		case (Event::Resonance_1o2): {
+			BackScatterProb = ArTables.P_backward_resonance_1o2(std::fabs(event.En_collision));
 			break;
 		}
 		case (Event::Elastic): {
@@ -244,10 +242,18 @@ void Manager::DoScattering(Event &event)
 	double EnergyLoss = 0;
 	long double gamma_f = e_mass_eVconst/Ar_mass_eVconst;
 	switch (event.process) {
-		case (Event::Resonance): {
-			double TM_factor = is_backward ? ArTables.TM_backward_resonance(std::fabs(event.En_collision))
-					: ArTables.TM_forward_resonance(std::fabs(event.En_collision));
+		case (Event::Resonance_3o2): {
+			double TM_factor = is_backward ? ArTables.TM_backward_resonance_3o2(std::fabs(event.En_collision))
+					: ArTables.TM_forward_resonance_3o2(std::fabs(event.En_collision));
 			EnergyLoss = 2 * TM_factor*event.En_collision*gamma_f /pow(1 + gamma_f, 2);
+			EnergyLoss *=RESONANCE_EN_LOSS_FACTOR_;
+			break;
+		}
+		case (Event::Resonance_1o2): {
+			double TM_factor = is_backward ? ArTables.TM_backward_resonance_1o2(std::fabs(event.En_collision))
+					: ArTables.TM_forward_resonance_1o2(std::fabs(event.En_collision));
+			EnergyLoss = 2 * TM_factor*event.En_collision*gamma_f /pow(1 + gamma_f, 2);
+			EnergyLoss *=RESONANCE_EN_LOSS_FACTOR_;
 			break;
 		}
 		case (Event::Elastic): {
@@ -275,8 +281,11 @@ void Manager::DoScattering(Event &event)
 		event.En_finish = -event.En_finish;
 
 	event.delta_time_full = event.delta_time;
-	if (event.process == Event::Resonance) {
-		event.delta_time_full += random_generator_->Exp(resonance_time_const);
+	if (event.process == Event::Resonance_3o2) {
+		event.delta_time_full += random_generator_->Exp(h_bar_eVconst/Width_3o2_);
+	}
+	if (event.process == Event::Resonance_1o2) {
+		event.delta_time_full += random_generator_->Exp(h_bar_eVconst/Width_1o2_);
 	}
 	if (is_overflow)
 		event.process = Event::Overflow;
@@ -287,8 +296,9 @@ void Manager::PostStepAction(Event &event)
 {
 	if (!is_ready_)
 		return;
-	if ((0==skip_counter_)||(IsFinished(event))) {
+	if ((0==skip_counter_)||(IsFinished(event))||(event.process>Event::Elastic)) {
 		sim_data_->Fill();
+		skip_counter_=0;
 	}
 	++skip_counter_;
 	if (skip_counter_>SKIP_HISTORY_)
@@ -354,10 +364,11 @@ void Manager::WriteHistory(std::string root_fname)
 	root_fname.pop_back();
 	str.open(root_fname+"process_legend.txt", std::ios_base::trunc);
 	str<<"//tree->process value | meaning"<<std::endl;
-	str<<Event::Overflow<<"\tOverflow (energy exceeds "<<EN_MAXIMUM_<<" eV)"<<std::endl;
-	str<<Event::None<<"\tNone"<<std::endl;
-	str<<Event::Elastic<<"\tElastic scattering"<<std::endl;
-	str<<Event::Resonance<<"\tFeshbach resonances"<<std::endl;
+	str<<Event::Overflow<<"\t\"Overflow (energy exceeds "<<EN_MAXIMUM_<<" eV)\""<<std::endl;
+	str<<Event::None<<"\t\"None\""<<std::endl;
+	str<<Event::Elastic<<"\t\"Elastic scattering\""<<std::endl;
+	str<<Event::Resonance_3o2<<"\t\"Feshbach resonance 3/2\""<<std::endl;
+	str<<Event::Resonance_1o2<<"\t\"Feshbach resonance 1/2\""<<std::endl;
 	for (int proc = Event::Ionization, end_ = ArExper.max_process_ID + Event::Ionization; proc!=end_; ++proc) {
 		InelasticProcess *p = ArExper.FindInelastic(proc-Event::Ionization);
 		if (NULL!=p)

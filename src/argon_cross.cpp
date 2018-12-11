@@ -5,9 +5,11 @@ ArDataTables ArTables;
 
 EnergyScanner::EnergyScanner(ScanType type): i(0), type_(type)
 {
-	/*ElasticXS = 0, ResonanceXS = 1, DiffXS = 2,
-	InelasticXS = 3, ElasticResXS = 4, XSIntegral = 5, PlotElastic = 6,
-	PlotResonance = 7, PlotDiff = 8, PlotInelastic = 9, PlotAllXS = 10*/
+	/*ElasticXS, Resonance_3o2_XS, Resonance_1o2_XS, ResonancesXS,
+		Resonance_3o2_DiffXS, Resonance_1o2_DiffXS, ResonancesDiffXS,
+		DiffXS,	InelasticXS, ElasticResXS, XSIntegral, PlotElastic,
+		PlotResonance_3o2, PlotResonance_1o2, PlotResonances,
+		PlotDiffXS, PlotInelastic, PlotElasticResXS, PlotAllXS*/
 	switch (type_) {
 	case (ElasticXS): {
 		//from 1e-3 eV to 0.1 eV with step 5e-4 eV, etc.
@@ -15,16 +17,34 @@ EnergyScanner::EnergyScanner(ScanType type): i(0), type_(type)
 				ColoredInterval (1, 10, 5e-2) + ColoredInterval (10, XS_EL_EN_MAXIMUM_, 0.1);
 		break;
 	}
-	case (ResonanceXS): {
-		energy_range_ = ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_) + 	//coarse area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_) + 			//coarse area
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_/30) + 		//fine area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_/30); 		//fine area
+	case (Resonance_3o2_XS): {
+		energy_range_ = ColoredInterval (En_3o2_ - 100*Width_3o2_, En_3o2_ + 100*Width_3o2_, Width_3o2_/2) + 	//coarse area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, En_3o2_ + 15*Width_3o2_, Width_3o2_/30); 		//fine area
 		break;
 	}
-	case (ResonanceDiffXS): {
-		energy_range_ = ColoredInterval (En_1o2_ - 100*Width_1o2_, En_1o2_ + 100*Width_1o2_, 4*Width_1o2_) + 	//coarse area
-				ColoredInterval (En_3o2_ - 100*Width_3o2_, En_3o2_ + 100*Width_3o2_, 4*Width_3o2_); 			//coarse area
+	case (Resonance_1o2_XS): {
+		energy_range_ = ColoredInterval (En_1o2_ - 100*Width_1o2_, En_1o2_ + 100*Width_1o2_, Width_1o2_/2) + 	//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, En_1o2_ + 15*Width_1o2_, Width_1o2_/30); 		//fine area
+		break;
+	}
+	case (ResonancesXS): {
+		energy_range_ = ColoredInterval (En_1o2_ - 100*Width_1o2_, En_1o2_ + 100*Width_1o2_, Width_1o2_/2) + 	//coarse area
+				ColoredInterval (En_3o2_ - 100*Width_3o2_, En_3o2_ + 100*Width_3o2_, Width_3o2_/2) + 			//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, En_1o2_ + 15*Width_1o2_, Width_1o2_/30) + 		//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, En_3o2_ + 15*Width_3o2_, Width_3o2_/30); 		//fine area
+		break;
+	}
+	case (Resonance_3o2_DiffXS): {
+		energy_range_ =  ColoredInterval (En_3o2_ - 20*Width_3o2_, En_3o2_ + 20*Width_3o2_, 4*Width_3o2_);
+		break;
+	}
+	case (Resonance_1o2_DiffXS): {
+		energy_range_ = ColoredInterval (En_1o2_ - 20*Width_1o2_, En_1o2_ + 20*Width_1o2_, 4*Width_1o2_);
+		break;
+	}
+	case (ResonancesDiffXS): {
+		energy_range_ = ColoredInterval (En_1o2_ - 20*Width_1o2_, En_1o2_ + 20*Width_1o2_, 4*Width_1o2_) + 	//coarse area
+				ColoredInterval (En_3o2_ - 20*Width_3o2_, En_3o2_ + 20*Width_3o2_, 4*Width_3o2_); 			//coarse area
 		break;
 	}
 	case (DiffXS): {
@@ -40,19 +60,19 @@ EnergyScanner::EnergyScanner(ScanType type): i(0), type_(type)
 	case (ElasticResXS): {
 		energy_range_ = ColoredInterval (XS_EL_EN_MINIMUM_, 0.1, 5e-4) + ColoredInterval (0.1, 1, 1e-3) +
 				ColoredInterval (1, 10, 5e-2) + ColoredInterval (10, XS_EL_EN_MAXIMUM_, 0.1) +
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_) + 		//coarse area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_) + 		//coarse area
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_/30) + 	//fine area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_/30);	//fine area
+				ColoredInterval (En_1o2_ - 100*Width_1o2_, En_1o2_ + 100*Width_1o2_, Width_1o2_/2) + 		//coarse area
+				ColoredInterval (En_3o2_ - 100*Width_3o2_, En_3o2_ + 100*Width_3o2_, Width_3o2_/2) + 		//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, En_1o2_ + 15*Width_1o2_, Width_1o2_/30) + 	//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, En_3o2_ + 15*Width_3o2_, Width_3o2_/30);	//fine area
 		break;
 	}
 	case (XSIntegral): {
 		energy_range_ = ColoredInterval (0, 0.1, 2e-4) + ColoredInterval (0.1, 1, 8e-4) +
 				ColoredInterval (1, 10, 1e-2) + ColoredInterval (10, EN_MAXIMUM_, 0.02) +
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 200*Width_1o2_), Width_1o2_/5) +	//coarse area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 200*Width_3o2_), Width_3o2_/5) +	//coarse area
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 200*Width_1o2_), Width_1o2_/80) + 	//fine area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 200*Width_3o2_), Width_3o2_/80) +	//fine area
+				ColoredInterval (En_1o2_ - 100*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 100*Width_1o2_), Width_1o2_/5) +	//coarse area
+				ColoredInterval (En_3o2_ - 100*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 100*Width_3o2_), Width_3o2_/5) +	//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 15*Width_1o2_), Width_1o2_/80) + 	//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 15*Width_3o2_), Width_3o2_/80) +	//fine area
 				ColoredInterval (11.5, EN_MAXIMUM_, 0.003);
 		break;
 	}
@@ -62,32 +82,51 @@ EnergyScanner::EnergyScanner(ScanType type): i(0), type_(type)
 				ColoredInterval (1, 10, 3e-2) + ColoredInterval (10, XS_EL_EN_MAXIMUM_, 0.086);
 		break;
 	}
-	case (PlotResonance): {
-		energy_range_ = ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_/3) + 	//coarse area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_/3) + 			//coarse area
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, En_1o2_ + 200*Width_1o2_, Width_1o2_/80) + 		//fine area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, En_3o2_ + 200*Width_3o2_, Width_3o2_/80); 		//fine area
+	case (PlotResonance_3o2): {
+		energy_range_ = ColoredInterval (En_3o2_ - 110*Width_3o2_, En_3o2_ + 110*Width_3o2_, Width_3o2_/3) +//coarse area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, En_3o2_ + 15*Width_3o2_, Width_3o2_/80); 		//fine area
 		break;
 	}
-	case (DiffXS): {
-		energy_range_ = ColoredInterval (PHASES_EN_MINIMUM_, 0.1, 7e-4) +
+	case (PlotResonance_1o2): {
+		energy_range_ = ColoredInterval (En_1o2_ - 110*Width_1o2_, En_1o2_ + 110*Width_1o2_, Width_1o2_/3) +//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, En_1o2_ + 15*Width_1o2_, Width_1o2_/80); 		//fine area
+		break;
+	}
+	case (PlotResonances): {
+		energy_range_ = ColoredInterval (En_1o2_ - 110*Width_1o2_, En_1o2_ + 110*Width_1o2_, Width_1o2_/3) + 	//coarse area
+				ColoredInterval (En_3o2_ - 110*Width_3o2_, En_3o2_ + 110*Width_3o2_, Width_3o2_/3) + 			//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, En_1o2_ + 15*Width_1o2_, Width_1o2_/80) + 		//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, En_3o2_ + 15*Width_3o2_, Width_3o2_/80); 			//fine area
+		break;
+	}
+	case (PlotDiffXS): {
+		energy_range_ = ColoredInterval (1e-4, 0.1, 7e-4) +
 				ColoredInterval (0.1, 1, 7e-3) +
-				ColoredInterval (1, PHASES_EN_MAXIMUM_, 0.086);
+				ColoredInterval (1, EN_MAXIMUM_, 0.086);
 		break;
 	}
-	case (PlotInelastic): {
+	case (PlotInelasticXS): {
 		energy_range_ = ColoredInterval (11.5, XS_EL_EN_MAXIMUM_, 0.007) +
 				ColoredInterval (XS_EL_EN_MAXIMUM_, 100, 0.1);
 		break;
 	}
+	case (PlotElasticResXS): {
+		energy_range_ = ColoredInterval (1e-4, 0.1, 2e-4) + ColoredInterval (0.1, 1, 7e-4) +
+				ColoredInterval (1, 10, 7e-3) + ColoredInterval (10, XS_EL_EN_MAXIMUM_, 0.016) +
+				ColoredInterval (En_1o2_ - 110*Width_1o2_, std::min(XS_EL_EN_MAXIMUM_, En_1o2_ + 110*Width_1o2_), Width_1o2_/5) +	//coarse area
+				ColoredInterval (En_3o2_ - 110*Width_3o2_, std::min(XS_EL_EN_MAXIMUM_, En_3o2_ + 110*Width_3o2_), Width_3o2_/5) +	//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, std::min(XS_EL_EN_MAXIMUM_, En_1o2_ + 15*Width_1o2_), Width_1o2_/80) +//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, std::min(XS_EL_EN_MAXIMUM_, En_3o2_ + 15*Width_3o2_), Width_3o2_/80);//fine area
+		break;
+	}
 	case (PlotAllXS): {
 		energy_range_ = ColoredInterval (1e-4, 0.1, 2e-4) + ColoredInterval (0.1, 1, 7e-4) +
-				ColoredInterval (1, 10, 7e-3) + ColoredInterval (10, EN_MAXIMUM_, 0.016) +
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 200*Width_1o2_), Width_1o2_/5) +	//coarse area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 200*Width_3o2_), Width_3o2_/5) +	//coarse area
-				ColoredInterval (En_1o2_ - 200*Width_1o2_, std::min(EN_MAXIMUM_, En_1o2_ + 200*Width_1o2_), Width_1o2_/80) +//fine area
-				ColoredInterval (En_3o2_ - 200*Width_3o2_, std::min(EN_MAXIMUM_, En_3o2_ + 200*Width_3o2_), Width_3o2_/80) +//fine area
-				ColoredInterval (11.5, EN_MAXIMUM_, 0.003);
+				ColoredInterval (1, 10, 7e-3) + ColoredInterval (10, XS_EL_EN_MAXIMUM_, 0.016) +
+				ColoredInterval (En_1o2_ - 110*Width_1o2_, std::min(XS_EL_EN_MAXIMUM_, En_1o2_ + 110*Width_1o2_), Width_1o2_/5) +	//coarse area
+				ColoredInterval (En_3o2_ - 110*Width_3o2_, std::min(XS_EL_EN_MAXIMUM_, En_3o2_ + 110*Width_3o2_), Width_3o2_/5) +	//coarse area
+				ColoredInterval (En_1o2_ - 15*Width_1o2_, std::min(XS_EL_EN_MAXIMUM_, En_1o2_ + 15*Width_1o2_), Width_1o2_/80) +//fine area
+				ColoredInterval (En_3o2_ - 15*Width_3o2_, std::min(XS_EL_EN_MAXIMUM_, En_3o2_ + 15*Width_3o2_), Width_3o2_/80) +//fine area
+				ColoredInterval (11.5, XS_EL_EN_MAXIMUM_, 0.003);
 		break;
 	}
 	}
@@ -96,9 +135,14 @@ EnergyScanner::EnergyScanner(ScanType type): i(0), type_(type)
 long double EnergyScanner::Next(int& err)
 {
 	if (i<energy_range_.NumOfIndices()) {
+		long double val = energy_range_.Value(i);
 		++i;
-		err = 0;
-		return energy_range_.Value(i);
+		if (DBL_MAX==val){
+			err = 1;
+			Reset();
+		} else
+			err = 0;
+		return val;
 	}
 	err = 1;
 	Reset();
@@ -362,41 +406,60 @@ void ArDataTables::read_data (std::ifstream &inp, DataVector &data, long double 
 
 ArDataTables::ArDataTables():
 	total_cross_elastic_fname("data_derived/total_cross_section_elastic.dat"),
-	total_cross_resonance_fname("data_derived/total_cross_section_resonance.dat"),
+	total_cross_resonance_3o2_fname("data_derived/total_cross_section_resonance3o2.dat"),
+	total_cross_resonance_1o2_fname("data_derived/total_cross_section_resonance1o2.dat"),
 	back_scatter_elastic_prob_fname("data_derived/backward_scatter_elastic_prob.dat"),
-	back_scatter_resonance_prob_fname("data_derived/backward_scatter_resonance_prob.dat"),
+	back_scatter_resonance_3o2_prob_fname("data_derived/backward_scatter_resonance_3o2_prob.dat"),
+	back_scatter_resonance_1o2_prob_fname("data_derived/backward_scatter_resonance_1o2_prob.dat"),
 	TM_backward_elastic_fname("data_derived/TM_backward_elastic.dat"),
-	TM_backward_resonance_fname("data_derived/TM_backward_resonance.dat"),
+	TM_backward_resonance_3o2_fname("data_derived/TM_backward_resonance_3o2.dat"),
+	TM_backward_resonance_1o2_fname("data_derived/TM_backward_resonance_1o2.dat"),
 	TM_forward_elastic_fname("data_derived/TM_forward_elastic.dat"),
-	TM_forward_resonance_fname("data_derived/TM_forward_resonance.dat"),
+	TM_forward_resonance_3o2_fname("data_derived/TM_forward_resonance_3o2.dat"),
+	TM_forward_resonance_1o2_fname("data_derived/TM_forward_resonance_1o2.dat"),
 	total_cross_integral_fname("data_derived/total_cross_section_integral.dat"),
 	total_cross_elastic_(1,2), //interpolation with 1st order polynomial
-	total_cross_resonance_(1,2),
+	total_cross_resonance_3o2_(1,2),
+	total_cross_resonance_1o2_(1,2),
 	back_scatter_elastic_prob_(1,2),
-	back_scatter_resonance_prob_(1,2),
+	back_scatter_resonance_3o2_prob_(1,2),
+	back_scatter_resonance_1o2_prob_(1,2),
 	TM_backward_elastic_(1,2),
-	TM_backward_resonance_(1,2),
+	TM_backward_resonance_3o2_(1,2),
+	TM_backward_resonance_1o2_(1,2),
 	TM_forward_elastic_(1,2),
-	TM_forward_resonance_(1,2),
+	TM_forward_resonance_3o2_(1,2),
+	TM_forward_resonance_1o2_(1,2),
 	total_cross_integral_(1,2)
 {
 	std::cout<<"Constructing Ar data tables"<<std::endl;
 	ensure_file(total_cross_elastic_fname);
-	ensure_file(total_cross_resonance_fname);
+	ensure_file(total_cross_resonance_3o2_fname);
+	ensure_file(total_cross_resonance_1o2_fname);
 	ensure_file(back_scatter_elastic_prob_fname);
-	ensure_file(back_scatter_resonance_prob_fname);
+	ensure_file(back_scatter_resonance_3o2_prob_fname);
+	ensure_file(back_scatter_resonance_1o2_prob_fname);
 	ensure_file(TM_backward_elastic_fname);
-	ensure_file(TM_backward_resonance_fname);
+	ensure_file(TM_backward_resonance_3o2_fname);
+	ensure_file(TM_backward_resonance_1o2_fname);
 	ensure_file(TM_forward_elastic_fname);
-	ensure_file(TM_forward_resonance_fname);
+	ensure_file(TM_forward_resonance_3o2_fname);
+	ensure_file(TM_forward_resonance_1o2_fname);
 	ensure_file(total_cross_integral_fname);
-	total_cross_resonance_.set_out_value(0);
-	back_scatter_resonance_prob_.use_leftmost(true);
-	back_scatter_resonance_prob_.use_rightmost(true);
-	TM_backward_resonance_.use_leftmost(true);
-	TM_backward_resonance_.use_rightmost(true);
-	TM_forward_resonance_.use_leftmost(true);
-	TM_forward_resonance_.use_rightmost(true);
+	total_cross_resonance_3o2_.set_out_value(0);
+	total_cross_resonance_1o2_.set_out_value(0);
+	back_scatter_resonance_3o2_prob_.use_leftmost(true);
+	back_scatter_resonance_3o2_prob_.use_rightmost(true);
+	back_scatter_resonance_1o2_prob_.use_leftmost(true);
+	back_scatter_resonance_1o2_prob_.use_rightmost(true);
+	TM_backward_resonance_3o2_.use_leftmost(true);
+	TM_backward_resonance_3o2_.use_rightmost(true);
+	TM_backward_resonance_1o2_.use_leftmost(true);
+	TM_backward_resonance_1o2_.use_rightmost(true);
+	TM_forward_resonance_3o2_.use_leftmost(true);
+	TM_forward_resonance_3o2_.use_rightmost(true);
+	TM_forward_resonance_1o2_.use_leftmost(true);
+	TM_forward_resonance_1o2_.use_rightmost(true);
 
 	back_scatter_elastic_prob_.use_leftmost(true);
 	back_scatter_elastic_prob_.use_rightmost(true);
@@ -429,23 +492,44 @@ ArDataTables::ArDataTables():
 		str.close();
 	}
 
-	inp.open(total_cross_resonance_fname);
-	read_data(inp, total_cross_resonance_);
+	inp.open(total_cross_resonance_3o2_fname);
+	read_data(inp, total_cross_resonance_3o2_);
 	inp.close();
-	if (total_cross_resonance_.size()<total_cross_resonance_.getNused()) {
-		std::cout<<"Calculating total resonance cross section..."<<std::endl;
-		total_cross_resonance_.clear();
-		str.open(total_cross_resonance_fname, std::ios_base::trunc);
-		str<<"//E[eV]\tXS resonance [1e-20 m^2]"<<std::endl;
+	if (total_cross_resonance_3o2_.size()<total_cross_resonance_3o2_.getNused()) {
+		std::cout<<"Calculating total resonance 3/2 cross section..."<<std::endl;
+		total_cross_resonance_3o2_.clear();
+		str.open(total_cross_resonance_3o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tXS resonance 3/2 [1e-20 m^2]"<<std::endl;
 		double E, cross;
-		EnergyScanner EnRange(EnergyScanner::ResonanceXS);
+		EnergyScanner EnRange(EnergyScanner::Resonance_3o2_XS);
 		while (true) {
 			E = EnRange.Next(err);
 			if (0!=err)
 				break;
-			cross = argon_cross_resonance(E);
+			cross = argon_cross_resonance_3o2(E);
 			str<<E<<"\t"<<cross<<std::endl;
-			total_cross_resonance_.push_back(E, cross);
+			total_cross_resonance_3o2_.push_back(E, cross);
+		}
+		str.close();
+	}
+
+	inp.open(total_cross_resonance_1o2_fname);
+	read_data(inp, total_cross_resonance_1o2_);
+	inp.close();
+	if (total_cross_resonance_1o2_.size()<total_cross_resonance_1o2_.getNused()) {
+		std::cout<<"Calculating total resonance 1/2 cross section..."<<std::endl;
+		total_cross_resonance_1o2_.clear();
+		str.open(total_cross_resonance_1o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tXS resonance 1/2 [1e-20 m^2]"<<std::endl;
+		double E, cross;
+		EnergyScanner EnRange(EnergyScanner::Resonance_1o2_XS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			cross = argon_cross_resonance_1o2(E);
+			str<<E<<"\t"<<cross<<std::endl;
+			total_cross_resonance_1o2_.push_back(E, cross);
 		}
 		str.close();
 	}
@@ -472,23 +556,44 @@ ArDataTables::ArDataTables():
 		str.close();
 	}
 
-	inp.open(back_scatter_resonance_prob_fname);
-	read_data(inp, back_scatter_resonance_prob_);
+	inp.open(back_scatter_resonance_3o2_prob_fname);
+	read_data(inp, back_scatter_resonance_3o2_prob_);
 	inp.close();
-	if (back_scatter_resonance_prob_.size()<back_scatter_resonance_prob_.getNused()) {
-		std::cout<<"Calculating backward resonance scatter probability..."<<std::endl;
-		back_scatter_resonance_prob_.clear();
-		str.open(back_scatter_resonance_prob_fname, std::ios_base::trunc);
-		str<<"//E[eV]\tBack scatter resonance probability"<<std::endl;
+	if (back_scatter_resonance_3o2_prob_.size()<back_scatter_resonance_3o2_prob_.getNused()) {
+		std::cout<<"Calculating backward resonance 3/2 scatter probability..."<<std::endl;
+		back_scatter_resonance_3o2_prob_.clear();
+		str.open(back_scatter_resonance_3o2_prob_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tBack scatter resonance 3/2 probability"<<std::endl;
 		double E, prob;
-		EnergyScanner EnRange(EnergyScanner::ResonanceDiffXS);
+		EnergyScanner EnRange(EnergyScanner::Resonance_3o2_DiffXS);
 		while (true) {
 			E = EnRange.Next(err);
 			if (0!=err)
 				break;
-			prob = argon_back_resonance_prob(E);
+			prob = argon_back_resonance_3o2_prob(E);
 			str<<E<<"\t"<<prob<<std::endl;
-			back_scatter_resonance_prob_.push_back(E, prob);
+			back_scatter_resonance_3o2_prob_.push_back(E, prob);
+		}
+		str.close();
+	}
+
+	inp.open(back_scatter_resonance_1o2_prob_fname);
+	read_data(inp, back_scatter_resonance_1o2_prob_);
+	inp.close();
+	if (back_scatter_resonance_1o2_prob_.size()<back_scatter_resonance_1o2_prob_.getNused()) {
+		std::cout<<"Calculating backward resonance 1/2 scatter probability..."<<std::endl;
+		back_scatter_resonance_1o2_prob_.clear();
+		str.open(back_scatter_resonance_1o2_prob_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tBack scatter resonance 1/2 probability"<<std::endl;
+		double E, prob;
+		EnergyScanner EnRange(EnergyScanner::Resonance_1o2_DiffXS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			prob = argon_back_resonance_1o2_prob(E);
+			str<<E<<"\t"<<prob<<std::endl;
+			back_scatter_resonance_1o2_prob_.push_back(E, prob);
 		}
 		str.close();
 	}
@@ -514,23 +619,44 @@ ArDataTables::ArDataTables():
 		str.close();
 	}
 
-	inp.open(TM_backward_resonance_fname);
-	read_data(inp, TM_backward_resonance_);
+	inp.open(TM_backward_resonance_3o2_fname);
+	read_data(inp, TM_backward_resonance_3o2_);
 	inp.close();
-	if (TM_backward_resonance_.size()<TM_backward_resonance_.getNused()) {
-		std::cout<<"Calculating backward resonance momentum transfer factor..."<<std::endl;
-		TM_backward_resonance_.clear();
-		str.open(TM_backward_resonance_fname, std::ios_base::trunc);
-		str<<"//E[eV]\tTM backward resonance factor"<<std::endl;
+	if (TM_backward_resonance_3o2_.size()<TM_backward_resonance_3o2_.getNused()) {
+		std::cout<<"Calculating backward resonance 3/2 momentum transfer factor..."<<std::endl;
+		TM_backward_resonance_3o2_.clear();
+		str.open(TM_backward_resonance_3o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tTM backward resonance 3/2 factor"<<std::endl;
 		double E, prob;
-		EnergyScanner EnRange(EnergyScanner::ResonanceDiffXS);
+		EnergyScanner EnRange(EnergyScanner::Resonance_3o2_DiffXS);
 		while (true) {
 			E = EnRange.Next(err);
 			if (0!=err)
 				break;
-			prob = argon_TM_backward_resonance(E);
+			prob = argon_TM_backward_resonance_3o2(E);
 			str<<E<<"\t"<<prob<<std::endl;
-			TM_backward_resonance_.push_back(E, prob);
+			TM_backward_resonance_3o2_.push_back(E, prob);
+		}
+		str.close();
+	}
+
+	inp.open(TM_backward_resonance_1o2_fname);
+	read_data(inp, TM_backward_resonance_1o2_);
+	inp.close();
+	if (TM_backward_resonance_1o2_.size()<TM_backward_resonance_1o2_.getNused()) {
+		std::cout<<"Calculating backward resonance 1/2 momentum transfer factor..."<<std::endl;
+		TM_backward_resonance_1o2_.clear();
+		str.open(TM_backward_resonance_1o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tTM backward resonance 1/2 factor"<<std::endl;
+		double E, prob;
+		EnergyScanner EnRange(EnergyScanner::Resonance_1o2_DiffXS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			prob = argon_TM_backward_resonance_1o2(E);
+			str<<E<<"\t"<<prob<<std::endl;
+			TM_backward_resonance_1o2_.push_back(E, prob);
 		}
 		str.close();
 	}
@@ -556,23 +682,44 @@ ArDataTables::ArDataTables():
 		str.close();
 	}
 
-	inp.open(TM_forward_resonance_fname);
-	read_data(inp, TM_forward_resonance_);
+	inp.open(TM_forward_resonance_3o2_fname);
+	read_data(inp, TM_forward_resonance_3o2_);
 	inp.close();
-	if (TM_forward_resonance_.size()<TM_forward_resonance_.getNused()) {
-		std::cout<<"Calculating forward resonance momentum transfer factor..."<<std::endl;
-		TM_forward_resonance_.clear();
-		str.open(TM_forward_resonance_fname, std::ios_base::trunc);
-		str<<"//E[eV]\tTM forward resonance factor"<<std::endl;
+	if (TM_forward_resonance_3o2_.size()<TM_forward_resonance_3o2_.getNused()) {
+		std::cout<<"Calculating forward resonance 3/2 momentum transfer factor..."<<std::endl;
+		TM_forward_resonance_3o2_.clear();
+		str.open(TM_forward_resonance_3o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tTM forward resonance 3/2 factor"<<std::endl;
 		double E, prob;
-		EnergyScanner EnRange(EnergyScanner::ResonanceDiffXS);
+		EnergyScanner EnRange(EnergyScanner::Resonance_3o2_DiffXS);
 		while (true) {
 			E = EnRange.Next(err);
 			if (0!=err)
 				break;
-			prob = argon_TM_forward_resonance(E);
+			prob = argon_TM_forward_resonance_3o2(E);
 			str<<E<<"\t"<<prob<<std::endl;
-			TM_forward_resonance_.push_back(E, prob);
+			TM_forward_resonance_3o2_.push_back(E, prob);
+		}
+		str.close();
+	}
+
+	inp.open(TM_forward_resonance_1o2_fname);
+	read_data(inp, TM_forward_resonance_1o2_);
+	inp.close();
+	if (TM_forward_resonance_1o2_.size()<TM_forward_resonance_1o2_.getNused()) {
+		std::cout<<"Calculating forward resonance 1/2 momentum transfer factor..."<<std::endl;
+		TM_forward_resonance_1o2_.clear();
+		str.open(TM_forward_resonance_1o2_fname, std::ios_base::trunc);
+		str<<"//E[eV]\tTM forward resonance 1/2 factor"<<std::endl;
+		double E, prob;
+		EnergyScanner EnRange(EnergyScanner::Resonance_1o2_DiffXS);
+		while (true) {
+			E = EnRange.Next(err);
+			if (0!=err)
+				break;
+			prob = argon_TM_forward_resonance_1o2(E);
+			str<<E<<"\t"<<prob<<std::endl;
+			TM_forward_resonance_1o2_.push_back(E, prob);
 		}
 		str.close();
 	}
@@ -624,8 +771,11 @@ long double ArDataTables::CrossSection (double E, short type)
 	if (Event::Elastic == type) {
 		return XS_elastic(E);
 	}
-	if (Event::Resonance == type) {
-		return XS_resonance(E);
+	if (Event::Resonance_3o2 == type) {
+		return XS_resonance_3o2(E);
+	}
+	if (Event::Resonance_1o2 == type) {
+		return XS_resonance_1o2(E);
 	}
 	if (type>=Event::Ionization) {
 		short ID = type - Event::Ionization;
@@ -657,39 +807,58 @@ long double ArDataTables::XS_elastic(double E)
 	return total_cross_elastic_(E, E);
 }*/
 
-long double ArDataTables::XS_resonance(double E)
+long double ArDataTables::XS_resonance_3o2(double E)
 {
-	return total_cross_resonance_(E, E);
+	return total_cross_resonance_3o2_(E, E);
+}
+long double ArDataTables::XS_resonance_1o2(double E)
+{
+	return total_cross_resonance_1o2_(E, E);
 }
 double ArDataTables::P_backward_elastic(double E)
 {
 	//return 0.31;
 	return back_scatter_elastic_prob_(E, E);
 }
-double ArDataTables::P_backward_resonance(double E)
+double ArDataTables::P_backward_resonance_3o2(double E)
+{
+	//return 0.31;
+	return back_scatter_resonance_3o2_prob_(E, E);
+}
+double ArDataTables::P_backward_resonance_1o2(double E)
 {	
 	//return 0.31;
-	return back_scatter_resonance_prob_(E, E);
+	return back_scatter_resonance_1o2_prob_(E, E);
 }
 double ArDataTables::TM_backward_elastic(double E)
 {
 	//return 1.55;
 	return TM_backward_elastic_(E, E); 
 }
-double ArDataTables::TM_backward_resonance(double E)
+double ArDataTables::TM_backward_resonance_3o2(double E)
 {
 	//return 1.55;
-	return TM_backward_resonance_(E, E);
+	return TM_backward_resonance_3o2_(E, E);
+}
+double ArDataTables::TM_backward_resonance_1o2(double E)
+{
+	//return 1.55;
+	return TM_backward_resonance_1o2_(E, E);
 }
 double ArDataTables::TM_forward_elastic(double E)
 {
 	//return 0.38;
 	return TM_forward_elastic_(E, E); 
 }
-double ArDataTables::TM_forward_resonance(double E)
+double ArDataTables::TM_forward_resonance_3o2(double E)
 {
 	//return 0.38;
-	return TM_forward_resonance_(E, E); 
+	return TM_forward_resonance_3o2_(E, E);
+}
+double ArDataTables::TM_forward_resonance_1o2(double E)
+{
+	//return 0.38;
+	return TM_forward_resonance_1o2_(E, E);
 }
 
 //always from -EN_MAXIMUM_
@@ -728,25 +897,33 @@ long double ArDataTables::XS_integral_find(long double Int, Event &event)
 void ArDataTables::setOrder(int order)
 {
 	total_cross_elastic_.setOrder(order);
-	total_cross_resonance_.setOrder(order);
+	total_cross_resonance_3o2_.setOrder(order);
+	total_cross_resonance_1o2_.setOrder(order);
 	back_scatter_elastic_prob_.setOrder(order);
-	back_scatter_resonance_prob_.setOrder(order);
+	back_scatter_resonance_3o2_prob_.setOrder(order);
+	back_scatter_resonance_1o2_prob_.setOrder(order);
 	TM_backward_elastic_.setOrder(order);
-	TM_backward_resonance_.setOrder(order);
+	TM_backward_resonance_3o2_.setOrder(order);
+	TM_backward_resonance_1o2_.setOrder(order);
 	TM_forward_elastic_.setOrder(order);
-	TM_forward_resonance_.setOrder(order);
+	TM_forward_resonance_3o2_.setOrder(order);
+	TM_forward_resonance_1o2_.setOrder(order);
 }
 
 void ArDataTables::setNused(int N)
 {
 	total_cross_elastic_.setNused(N);
-	total_cross_resonance_.setNused(N);
+	total_cross_resonance_3o2_.setNused(N);
+	total_cross_resonance_1o2_.setNused(N);
 	back_scatter_elastic_prob_.setNused(N);
-	back_scatter_resonance_prob_.setNused(N);
+	back_scatter_resonance_3o2_prob_.setNused(N);
+	back_scatter_resonance_1o2_prob_.setNused(N);
 	TM_backward_elastic_.setNused(N);
-	TM_backward_resonance_.setNused(N);
+	TM_backward_resonance_3o2_.setNused(N);
+	TM_backward_resonance_1o2_.setNused(N);
 	TM_forward_elastic_.setNused(N);
-	TM_forward_resonance_.setNused(N);
+	TM_forward_resonance_3o2_.setNused(N);
+	TM_forward_resonance_1o2_.setNused(N);
 }
 
 int ArDataTables::getOrder(void)
@@ -981,15 +1158,18 @@ long double argon_TM_backward (long double E)
 	return W/cross;
 }
 
-long double argon_cross_resonance_diff (long double E, long double theta) //TODO: maybe need to implement
+long double argon_cross_resonance_3o2_diff (long double E, long double theta)
 {
 	return 0;
 }
 
-long double argon_cross_resonance (long double E)
+long double argon_cross_resonance_1o2_diff (long double E, long double theta)
 {
-	//if ((E<10.85)||(E>11.7))
-	//	return 0;
+	return 0;
+}
+
+long double argon_cross_resonance_3o2 (long double E)
+{
 	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E);
 	long double sin_phase_1 = 0;
 	long double cos_phase_1 = 1;
@@ -1000,23 +1180,51 @@ long double argon_cross_resonance (long double E)
 	long double sin_3o2 = - sqrt(1.0/(1+pow( cot , 2)));
 	long double cos_3o2 = - cot * sin_3o2;
 	long double cross =8*M_PI*(pow(sin_phase_1*cos_3o2 + cos_phase_1*sin_3o2, 2) - sin_phase_1*sin_phase_1);
-	cot = 2*(E - En_1o2_ )/Width_1o2_;
-	long double sin_1o2 = - sqrt(1.0/(1+pow( cot , 2)));
-	long double cos_1o2 = - cot * sin_1o2;
-	cross +=4*M_PI*(pow(sin_phase_1*cos_1o2 + cos_phase_1*sin_1o2, 2) - sin_phase_1*sin_phase_1);
 	cross /=pow (k, 2);
 	return cross * a_bohr_SIconst * a_bohr_SIconst;
 }
 
-long double argon_back_resonance_prob (long double E)
+long double argon_cross_resonance_1o2 (long double E)
+{
+	long double k = a_h_bar_2e_m_e_SIconst*sqrt(E);
+	long double sin_phase_1 = 0;
+	long double cos_phase_1 = 1;
+	long double tan_1 = 0;
+	argon_phase_values_exp(k, 1, tan_1, sin_phase_1, cos_phase_1);
+	long double cot = 2*(E - En_1o2_ )/Width_1o2_;
+	long double sin_1o2 = - sqrt(1.0/(1+pow( cot , 2)));
+	long double cos_1o2 = - cot * sin_1o2;
+	long double cross =4*M_PI*(pow(sin_phase_1*cos_1o2 + cos_phase_1*sin_1o2, 2) - sin_phase_1*sin_phase_1);
+	cross /=pow (k, 2);
+	return cross * a_bohr_SIconst * a_bohr_SIconst;
+}
+
+long double argon_back_resonance_3o2_prob (long double E)
 {
 	return argon_back_scatter_prob(E);
 }
-long double argon_TM_forward_resonance (long double E)
+
+long double argon_back_resonance_1o2_prob (long double E)
+{
+	return argon_back_scatter_prob(E);
+}
+
+long double argon_TM_forward_resonance_3o2 (long double E)
 {
 	return argon_TM_forward(E);
 }
-long double argon_TM_backward_resonance (long double E)
+
+long double argon_TM_forward_resonance_1o2 (long double E)
+{
+	return argon_TM_forward(E);
+}
+
+long double argon_TM_backward_resonance_3o2 (long double E)
+{
+	return argon_TM_backward(E);;
+}
+
+long double argon_TM_backward_resonance_1o2 (long double E)
 {
 	return argon_TM_backward(E);;
 }
