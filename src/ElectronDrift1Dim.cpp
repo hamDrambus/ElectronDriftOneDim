@@ -34,7 +34,7 @@ int main(int argn, char * argv[]) {
 	}
 	ensure_file(root_fname);
 	ensure_file("tests/t");
-	test_all();
+	//test_all();
 	//std::cout<<"Enter something: ";
 	//std::cin>>a;
 	//return 0;

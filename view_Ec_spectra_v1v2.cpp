@@ -15,10 +15,10 @@
 	
 	int DEF_W = 900, DEF_H = 700;
 	std::vector<double> DRIFT_DISTANCE = {3e-3, 3e-3, 3e-3, 3e-3};
-	std::string fname_0("Output/v13.1/eData_7.0Td");
-	std::string fname_1("Output/v15.0/eData_7.0Td");
-	std::string fname_2("Output/v15.4/eData_7.0Td");
-	std::string fname_3("Output/v15.3/eData_7.0Td");
+	std::string fname_0("Output/v13.1/eData_0.3Td");
+	std::string fname_1("Output/v13.1/eData_1.0Td");
+	std::string fname_2("Output/v13.1/eData_3.0Td");
+	std::string fname_3("Output/v13.1/eData_7.0Td");
 	std::string fname_4("Output/v15.5/eData_7.0Td");
 	
 	double En_start;
@@ -35,7 +35,7 @@
 
 	
 	double max_val = 0;
-	for (int nhist = 0; nhist<5;++nhist) {
+	for (int nhist = 0; nhist<4;++nhist) {
 	    TH1D* histE = NULL;
 	    std::string fname;
 	    switch (nhist) 
@@ -137,7 +137,7 @@
 	TLegend *legend = new TLegend( 0.55, 0.65, 0.9, 0.9);
 	//legend->SetHeader("");
 	legend->SetMargin(0.25);
-	TH2F* frame = new TH2F( "frame", "Collision E spectra", 500, EN_MIN_, EN_MAX_, 500, 0, max_val);
+	TH2F* frame = new TH2F( "frame", "Collision E spectra 1D", 500, EN_MIN_, EN_MAX_, 500, 0, max_val);
 	frame->GetXaxis()->SetTitle("Ee [eV]");
 	frame->GetYaxis()->SetTitle("");
 	frame->Draw();
@@ -155,14 +155,14 @@
 	histE_3->SetLineColor(3);
 	histE_3->Draw("csame");
 	histE_4->SetLineWidth(2);
-	histE_4->SetLineColor(6);
-	histE_4->Draw("csame");
+	//histE_4->SetLineColor(6);
+	//histE_4->Draw("csame");
 	
-	legend->AddEntry(histE_0, (std::string("7.0 Td, normal resonance")).c_str(), "l");
-	legend->AddEntry(histE_1, (std::string("7.0 Td, W=3e-2 eV")).c_str(), "l");
-	legend->AddEntry(histE_2, (std::string("7.0 Td, W=3e-2 eV, Loss=50x")).c_str(), "l");
-	legend->AddEntry(histE_3, (std::string("7.0 Td, W=3e-2 eV, Loss=100x")).c_str(), "l");
-	legend->AddEntry(histE_4, (std::string("7.0 Td, W=3e-2 eV, Loss=150x")).c_str(), "l");
+	legend->AddEntry(histE_0, (std::string("0.3 Td")).c_str(), "l");
+	legend->AddEntry(histE_1, (std::string("1.0 Td")).c_str(), "l");
+	legend->AddEntry(histE_2, (std::string("3.0 Td")).c_str(), "l");
+	legend->AddEntry(histE_3, (std::string("7.0 Td")).c_str(), "l");
+	//legend->AddEntry(histE_4, (std::string("7.0 Td, W=3e-2 eV, Loss=150x")).c_str(), "l");
 	
 	frame->Draw("sameaxis");
 	legend->Draw("same");
