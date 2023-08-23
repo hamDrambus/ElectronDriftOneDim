@@ -2,7 +2,7 @@
 	TH1D* histE = new TH1D ("EnergyC [eV]","EnergyC [eV]",500,0, 15);
 	TH1D* hist_dE = new TH1D ("Energy increase in resonance [eV]","Energy increase in resonance [eV]",300,-0.3, 0.3);
 	TH1D* hist_dE_abs = new TH1D ("Energy abs increase in resonance [eV]","Energy abs increase in resonance [eV]",300,0.0, 0.3);
-	TH1D* hist_Eloss = new TH1D ("Energy loss in resonance [eV]","Energy loss in resonance [eV]",300,0, 0.001);
+	TH1D* hist_Eloss = new TH1D ("Energy loss in resonance [eV]","Energy loss in resonance [eV]",300,0, 0.0008);
 	TH1D* hist_dT = new TH1D ("dTime [s]","dTime [s]",300,4e-16, 1e-12);
 	TH1D* hist_dx = new TH1D ("dX [m]","dX [m]",300,-1e-6, 4e-6);
 	TH1D* hist_V_drift = new TH1D ("Drift velocity [m/s]","Drift velocity [m/s]",300,0, 1e4);
@@ -14,7 +14,7 @@
 	double E_at_time = 1e-11;
 	double dt = 6e-12;
 	double DRIFT_DISTANCE = 3e-3;
-	std::string fname1("Output/v13.0/eData_0.3Td.root");
+	std::string fname1("Output/v13.1/eData_7.0Td.root");
 	std::string fname2("Output/v/eData_3Td_1.root");
 	
 	double En_start;
@@ -79,9 +79,9 @@
 		    hist_dT->Fill(delta_time_full);
 		    hist_dx->Fill(delta_x);
 		    
-		    //if ((std::fabs(En_collision)<11.5)&&((std::fabs(En_collision)>10.8))) {
+		    if ((std::fabs(En_collision)<11.5)&&((std::fabs(En_collision)>10.8))) {
 		    //if ((1==process)||(2==process)) {
-			{
+			//{
 			hist_dE->Fill(std::fabs(En_collision) - std::fabs(En_start));
 			hist_dE_abs->Fill(std::fabs(En_collision - En_start));
 			hist_Eloss->Fill(std::fabs(En_collision)- std::fabs(En_finish));
@@ -149,11 +149,11 @@
 	TGraph *gr_x_t = new TGraph ();
 	
 	std::cout<<"Drift distance: "<<DRIFT_DISTANCE<<std::endl;
-	std::cout<<"Num of elastic: "<<num_of_elastic<<std::endl;
-	std::cout<<"Num of resonance: "<<num_of_resonance<<std::endl;
 	std::cout<<"Num of overflow: "<<num_of_overflow<<std::endl;
-	std::cout<<"Num of ionizations: "<<num_of_ions<<std::endl;
 	std::cout<<"Num of excitations: "<<num_of_excitations<<std::endl;
+	std::cout<<"Num of resonance: "<<num_of_resonance<<std::endl;
+	std::cout<<"Num of ionizations: "<<num_of_ions<<std::endl;
+	std::cout<<"Num of elastic: "<<num_of_elastic<<std::endl;
 	std::cout<<"Num of electrons: "<<num_of_electrons<<std::endl;
 	
 }
